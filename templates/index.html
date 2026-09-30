@@ -1,0 +1,2538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AvianGuard AI — Clinical Avian Pathology &amp; Biosecurity Intelligence Station</title>
+  <meta name="description" content="Autonomous clinical AI diagnostic station for avian pathology, biosecurity surveillance, and real-time poultry flock health triage."/>
+  
+  <!-- Modern Luxury Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       ROYAL PREMIUM DESIGN SYSTEM & COLOR PALETTE
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    :root {
+      /* Panoramic Sunny Farm Canvas & Warm Luminous Glass System */
+      --bg-base: #0a0f0b;
+      
+      /* Warm Translucent Smoked Glass Surfaces (Luminous, lets background shine through gracefully) */
+      --s1: rgba(14, 20, 16, 0.58);
+      --s2: rgba(20, 30, 22, 0.50);
+      --s3: rgba(28, 40, 30, 0.70);
+
+      /* Luminescent Sunlit Borders & Fine Highlights */
+      --b1: rgba(255, 255, 255, 0.22);
+      --b2: rgba(251, 191, 36, 0.38);
+      --b-gold: rgba(251, 191, 36, 0.55);
+      --b-sapphire: rgba(56, 189, 248, 0.45);
+      --b-emerald: rgba(52, 211, 153, 0.50);
+
+      /* Sunburst Gold & Amber Crown (Warm Farm Sunlight Tone) */
+      --gold: #f59e0b;
+      --gold-bright: #fbbf24;
+      --gold-deep: #b45309;
+      --gold-glow: rgba(245, 158, 11, 0.50);
+      --gold-gradient: linear-gradient(135deg, #fef08a 0%, #fbbf24 45%, #d97706 100%);
+
+      /* Pasture Emerald Radiance (Healthy / Vitality) */
+      --emerald: #10b981;
+      --emerald-bright: #34d399;
+      --emerald-glow: rgba(52, 211, 153, 0.45);
+
+      /* Sky Blue & Sapphire */
+      --sapphire: #38bdf8;
+      --sapphire-bright: #60a5fa;
+      --sapphire-glow: rgba(56, 189, 248, 0.45);
+
+      /* Royal Amethyst */
+      --amethyst: #c084fc;
+      --amethyst-bright: #e879f9;
+      --amethyst-glow: rgba(192, 132, 252, 0.45);
+
+      /* Crimson / Ruby Alert */
+      --crimson: #ff3366;
+      --crimson-bright: #fb7185;
+      --crimson-glow: rgba(255, 51, 102, 0.55);
+
+      /* OVER-BRIGHT RADIANT HIGH-VISIBILITY TYPOGRAPHY */
+      --t1: #ffffff;             /* Pure glowing white */
+      --t2: #f1f5f9;             /* Crisp slate-100 */
+      --t3: #cbd5e1;             /* High contrast slate-300 */
+      --t-gold: #fef08a;         /* Radiant sunlight gold */
+      --t-emerald: #6ee7b7;      /* Bright vibrant pasture mint */
+      --text-glow: 0 1px 3px rgba(0, 0, 0, 0.90), 0 0 14px rgba(0, 0, 0, 0.50);
+
+      /* Radii & Effects */
+      --r-lg: 16px;
+      --r-md: 12px;
+      --r-sm: 8px;
+      --card-shadow: 0 18px 42px -8px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.28);
+      --royal-glow: 0 0 32px -4px rgba(245, 158, 11, 0.28);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-base);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(254, 240, 138, 0.18) 0%, transparent 55%),
+        linear-gradient(180deg, rgba(10, 15, 12, 0.26) 0%, rgba(12, 18, 14, 0.46) 100%),
+        url('/static/farm_background.png'),
+        url('/static/images/farm_background.png');
+      background-size: cover;
+      background-position: center top;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      color: var(--t1);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      letter-spacing: -0.01em;
+      text-shadow: var(--text-glow);
+    }
+
+    h1, h2, h3, h4, .brand-title, .disease-title {
+      font-family: "Outfit", sans-serif;
+    }
+
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: var(--bg-base); }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, var(--s3), rgba(245, 158, 11, 0.3));
+      border-radius: 4px;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       1. ROYAL HEADER & BRAND IDENTITY
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 32px;
+      background: rgba(16, 22, 18, 0.65);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      backdrop-filter: blur(20px) saturate(160%) brightness(108%);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--r-md);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.30) 0%, rgba(16, 185, 129, 0.22) 100%);
+      border: 1.5px solid rgba(251, 191, 36, 0.60);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.35), inset 0 0 12px rgba(255, 255, 255, 0.25);
+      color: var(--gold-bright);
+      position: relative;
+    }
+
+    .brand-icon svg {
+      width: 22px;
+      height: 22px;
+      filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.7));
+    }
+
+    .brand-title-wrap {
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      line-height: 1.2;
+    }
+
+    .brand-text-main {
+      color: #ffffff;
+      font-weight: 900;
+      text-shadow: 0 0 24px rgba(255, 255, 255, 0.75), 0 2px 8px rgba(0, 0, 0, 0.95);
+    }
+
+    .brand-text-ai {
+      color: #fbbf24;
+      font-weight: 900;
+      text-shadow: 0 0 20px rgba(245, 158, 11, 0.85), 0 2px 8px rgba(0, 0, 0, 0.95);
+    }
+
+    .brand-badge {
+      font-family: "Outfit", sans-serif;
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(245, 158, 11, 0.22);
+      color: #fef08a;
+      border: 1.5px solid rgba(251, 191, 36, 0.60);
+      text-transform: uppercase;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.30);
+    }
+
+    .brand-info p {
+      font-size: 0.78rem;
+      color: #f1f5f9;
+      margin-top: 3px;
+      font-weight: 600;
+      letter-spacing: 0.1px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+    }
+
+    .hdr-tools {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .pen-select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--s2);
+      border: 1.5px solid rgba(255, 255, 255, 0.22);
+      border-radius: var(--r-sm);
+      padding: 7px 14px;
+      font-size: 0.76rem;
+      color: #f1f5f9;
+      font-weight: 600;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+
+    .pen-select-wrap:focus-within {
+      border-color: var(--gold-bright);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
+    }
+
+    .pen-select {
+      background: transparent;
+      border: none;
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .pen-select option {
+      background: #121813;
+      color: #ffffff;
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(16, 185, 129, 0.20);
+      border: 1.5px solid rgba(52, 211, 153, 0.55);
+      border-radius: 100px;
+      padding: 7px 16px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #34d399;
+      letter-spacing: 1px;
+      box-shadow: 0 0 18px rgba(16, 185, 129, 0.3);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 10px var(--emerald);
+      animation: pulseLive 1.6s infinite ease-in-out;
+    }
+
+    @keyframes pulseLive {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       2. FLOATING DIAGNOSTIC FOCUS DECK & INTERACTIVE BUTTON GRID
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .mode-bar-container {
+      max-width: 1800px;
+      margin: 18px auto 0;
+      padding: 0 32px;
+      width: 100%;
+    }
+
+    .mode-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px 22px;
+      background: rgba(14, 22, 17, 0.58);
+      border: 1.5px solid rgba(255, 255, 255, 0.20);
+      border-radius: var(--r-lg);
+      backdrop-filter: blur(22px) saturate(160%) brightness(108%);
+      box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle top lightbar on mode-bar deck */
+    .mode-bar::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 10%;
+      right: 10%;
+      height: 1.5px;
+      background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.6), rgba(52, 211, 153, 0.6), transparent);
+    }
+
+    .mode-bar-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+
+    .mode-bar-title {
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: var(--t-gold);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+    }
+
+    .mode-title-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gold-bright);
+      box-shadow: 0 0 10px var(--gold-bright);
+      animation: pulseLive 1.8s infinite ease-in-out;
+    }
+
+    .mode-bar-subtitle {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      letter-spacing: 0.3px;
+    }
+
+    /* 4-Column Balanced Grid */
+    .mode-tabs-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      width: 100%;
+    }
+
+    /* Attractive Interactive Mode Buttons */
+    .mode-tab {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      border-radius: var(--r-md);
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      background: rgba(20, 28, 22, 0.52);
+      color: #ffffff;
+      cursor: pointer;
+      transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+      user-select: none;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+      text-align: left;
+    }
+
+    .mode-tab-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      color: var(--tab-c, var(--gold-bright));
+      transition: all 0.25s ease;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .mode-tab-icon-wrap svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2.2;
+      transition: transform 0.25s ease;
+    }
+
+    .mode-tab-content {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .mode-tab-name {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+      transition: color 0.2s ease;
+    }
+
+    .mode-tag-pill {
+      font-size: 0.66rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+      font-family: "JetBrains Mono", monospace;
+      letter-spacing: 0.2px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      width: fit-content;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    /* Attractive Hover State */
+    .mode-tab:hover {
+      border-color: var(--tab-c, var(--gold-bright));
+      background: rgba(28, 40, 30, 0.72);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px -4px var(--tab-glow, var(--gold-glow)), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+    }
+
+    .mode-tab:hover .mode-tab-icon-wrap {
+      background: rgba(255, 255, 255, 0.16);
+      transform: scale(1.08);
+      border-color: var(--tab-c, var(--gold-bright));
+      box-shadow: 0 0 14px var(--tab-glow, var(--gold-glow));
+    }
+
+    .mode-tab:hover .mode-tab-name {
+      color: var(--tab-c, var(--gold-bright));
+    }
+
+    /* Active State - Super Attractive & Luminous */
+    .mode-tab.active {
+      border-color: var(--tab-c, var(--gold-bright));
+      background: radial-gradient(circle at 50% 0%, var(--tab-active-bg, rgba(251, 191, 36, 0.18)) 0%, rgba(22, 32, 24, 0.85) 100%);
+      color: #ffffff;
+      box-shadow: 0 0 28px -2px var(--tab-glow, var(--gold-glow)), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .mode-tab.active::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 15%;
+      right: 15%;
+      height: 2.5px;
+      border-radius: 3px 3px 0 0;
+      background: var(--tab-c, var(--gold-bright));
+      box-shadow: 0 0 12px var(--tab-c, var(--gold-bright));
+    }
+
+    .mode-tab.active .mode-tab-icon-wrap {
+      background: var(--tab-c, var(--gold-bright));
+      color: #0b120c;
+      border-color: #ffffff;
+      box-shadow: 0 0 16px var(--tab-glow, var(--gold-glow));
+    }
+
+    .mode-tab.active .mode-tab-name {
+      color: #ffffff;
+      text-shadow: 0 0 12px var(--tab-c, var(--gold-bright)), 0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    .mode-tab.active .mode-tag-pill {
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.35);
+      font-weight: 800;
+    }
+
+    .mode-tab:active {
+      transform: scale(0.98);
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       3. MAIN WORKSPACE (SIDE BY SIDE: CAMERA & DETECTION)
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .workspace {
+      display: grid;
+      grid-template-columns: 1.32fr 1fr;
+      gap: 24px;
+      padding: 24px 32px;
+      max-width: 1800px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* LEFT: CAMERA SCREEN SECTION */
+    .cam-column {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .cam-card {
+      background: #02040a;
+      border-radius: var(--r-lg);
+      border: 1.5px solid var(--b1);
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 490px;
+    }
+
+    #live-feed {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+      max-height: 590px;
+    }
+
+    /* Camera Viewfinder Overlays */
+    .cam-hud-top {
+      position: absolute;
+      top: 16px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .rec-indicator {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(6, 8, 20, 0.82);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 51, 102, 0.35);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--crimson);
+      letter-spacing: 1.2px;
+      box-shadow: 0 0 14px rgba(255, 51, 102, 0.2);
+    }
+
+    .rec-pulse {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--crimson);
+      box-shadow: 0 0 10px var(--crimson);
+      animation: pulseRec 1.2s infinite;
+    }
+
+    @keyframes pulseRec {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.8); }
+    }
+
+    .hud-stats {
+      display: flex;
+      gap: 10px;
+    }
+
+    .hud-pill {
+      background: rgba(6, 8, 20, 0.82);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 100px;
+      padding: 5px 13px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--t2);
+      font-family: "JetBrains Mono", monospace;
+      letter-spacing: 0.3px;
+    }
+
+    /* Viewfinder Reticles in Royal Gold/Sapphire */
+    .reticle {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-color: var(--gold);
+      border-style: solid;
+      opacity: 0.75;
+      pointer-events: none;
+      filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.4));
+    }
+    .reticle.tl { top: 18px; left: 18px; border-width: 3px 0 0 3px; border-top-left-radius: 6px; }
+    .reticle.tr { top: 18px; right: 18px; border-width: 3px 3px 0 0; border-top-right-radius: 6px; }
+    .reticle.bl { bottom: 18px; left: 18px; border-width: 0 0 3px 3px; border-bottom-left-radius: 6px; }
+    .reticle.br { bottom: 18px; right: 18px; border-width: 0 3px 3px 0; border-bottom-right-radius: 6px; }
+
+    /* Animated Holographic Scan Beam */
+    .scan-beam {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, rgba(0, 240, 168, 0.8) 50%, transparent 100%);
+      box-shadow: 0 0 16px rgba(0, 240, 168, 0.6), 0 0 30px rgba(56, 189, 248, 0.3);
+      animation: scanSweep 3.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    @keyframes scanSweep {
+      0% { top: 0%; opacity: 0; }
+      15% { opacity: 0.55; }
+      85% { opacity: 0.55; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    /* Live Feed Status Banner */
+    .cam-status-banner {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(8, 12, 28, 0.88);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--b-gold);
+      border-radius: 100px;
+      padding: 7px 20px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: var(--t1);
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      white-space: nowrap;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 8px var(--emerald);
+    }
+
+    /* Camera Toolbar Below Video */
+    .cam-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      background: var(--s1);
+      border: 1px solid var(--b1);
+      border-radius: var(--r-md);
+      padding: 12px 18px;
+      flex-wrap: wrap;
+      backdrop-filter: blur(20px);
+      box-shadow: var(--card-shadow);
+    }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.74rem;
+      color: var(--t2);
+      font-weight: 500;
+    }
+
+    .conf-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 120px;
+      height: 6px;
+      background: var(--s3);
+      border-radius: 4px;
+      outline: none;
+    }
+    .conf-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--gold-bright);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--gold);
+      border: 2px solid #ffffff;
+      transition: transform 0.15s;
+    }
+    .conf-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    .slider-val {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--gold-bright);
+      min-width: 34px;
+    }
+
+    .tool-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--s2);
+      border: 1px solid var(--b2);
+      border-radius: var(--r-sm);
+      padding: 7px 14px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--t2);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .tool-btn svg { width: 15px; height: 15px; }
+    .tool-btn:hover {
+      color: var(--t1);
+      border-color: var(--gold);
+      background: var(--s3);
+    }
+    .tool-btn.active {
+      color: var(--gold-bright);
+      border-color: var(--gold);
+      background: rgba(245, 158, 11, 0.12);
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.15);
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       4. RIGHT COLUMN: ROYAL DIAGNOSTIC CARDS
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .diag-column {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* CARD 1: PRIMARY DETECTION */
+    .primary-card {
+      background: var(--s1);
+      border: 1.5px solid var(--det-border, rgba(251, 191, 36, 0.45));
+      border-radius: var(--r-lg);
+      padding: 24px 26px;
+      position: relative;
+      box-shadow: 0 18px 42px -8px rgba(0, 0, 0, 0.55), 0 0 30px -4px var(--det-glow, rgba(245, 158, 11, 0.18)), inset 0 1px 1px rgba(255, 255, 255, 0.28);
+      transition: all 0.35s ease;
+      backdrop-filter: blur(20px) saturate(160%) brightness(108%);
+      overflow: hidden;
+    }
+
+    /* Royal Top Lightbar */
+    .primary-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, var(--det-title-color, var(--gold-bright)) 50%, transparent 100%);
+      opacity: 0.75;
+    }
+
+    .card-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .card-subtitle {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--t-gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .model-source-pill {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3.5px 11px;
+      border-radius: 100px;
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--gold-bright);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.1);
+    }
+
+    .disease-title {
+      font-size: 1.95rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: var(--det-title-color, var(--gold-bright));
+      line-height: 1.2;
+      margin-bottom: 18px;
+      transition: color 0.3s;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95), 0 0 24px rgba(0, 0, 0, 0.7);
+    }
+
+    .conf-metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.84rem;
+      color: #f1f5f9;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .conf-pct-num {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.12rem;
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+    }
+
+    .conf-progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 18px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+    }
+
+    .conf-progress-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 6px;
+      background: var(--det-bar-fill, var(--gold-gradient));
+      box-shadow: 0 0 14px var(--det-bar-fill, var(--gold));
+      transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
+    }
+
+    /* Symptom Advisory Box */
+    .symptom-box {
+      background: var(--s2);
+      border: 1.5px solid rgba(255, 255, 255, 0.22);
+      border-radius: var(--r-md);
+      padding: 13px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    }
+
+    .symptom-icon {
+      color: var(--gold-bright);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .symptom-icon svg { width: 18px; height: 18px; }
+
+    .symptom-text {
+      font-size: 0.85rem;
+      color: #ffffff;
+      line-height: 1.55;
+      font-weight: 500;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    }
+    .symptom-text strong {
+      color: var(--t-gold);
+      font-weight: 800;
+    }
+
+    /* Severity and Clinical Badges */
+    .meta-badges-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .severity-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+    }
+    .severity-badge.low {
+      background: rgba(0, 240, 168, 0.14);
+      color: var(--emerald);
+      border: 1px solid rgba(0, 240, 168, 0.35);
+    }
+    .severity-badge.med {
+      background: rgba(245, 158, 11, 0.14);
+      color: var(--gold-bright);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .severity-badge.high {
+      background: rgba(249, 115, 22, 0.16);
+      color: #fb923c;
+      border: 1px solid rgba(249, 115, 22, 0.4);
+    }
+    .severity-badge.crit {
+      background: rgba(255, 51, 102, 0.18);
+      color: var(--crimson);
+      border: 1px solid rgba(255, 51, 102, 0.45);
+      animation: pulseBiohazard 1.4s infinite;
+    }
+
+    @keyframes pulseBiohazard {
+      0%, 100% { box-shadow: 0 0 16px rgba(255, 51, 102, 0.4); }
+      50% { box-shadow: 0 0 4px rgba(255, 51, 102, 0.1); }
+    }
+
+    /* CARD 2: DIFFERENTIAL DIAGNOSIS */
+    .diff-card {
+      background: var(--s1);
+      border: 1px solid var(--b1);
+      border-radius: var(--r-lg);
+      padding: 20px 24px;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(24px) saturate(180%);
+      box-shadow: var(--card-shadow);
+      position: relative;
+    }
+
+    .diff-head {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--t-gold);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .diff-empty-msg {
+      font-size: 0.88rem;
+      color: #e2e8f0;
+      font-weight: 500;
+      font-style: normal;
+      padding: 10px 0;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    }
+
+    .diff-candidate {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .diff-name-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .diff-name {
+      font-size: 1.18rem;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: "Outfit", sans-serif;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .diff-bar-track {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .diff-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 4px;
+      background: var(--sapphire);
+      transition: width 0.4s ease;
+      box-shadow: 0 0 10px var(--sapphire);
+    }
+
+    .diff-hint {
+      font-size: 0.82rem;
+      color: #f1f5f9;
+      font-weight: 500;
+      line-height: 1.5;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    }
+
+    /* CARD 3: VETERINARY CLINICAL ADVISORY */
+    .advisory-card {
+      background: var(--s1);
+      border: 1px solid var(--b1);
+      border-radius: var(--r-lg);
+      padding: 20px 24px;
+      backdrop-filter: blur(24px) saturate(180%);
+      box-shadow: var(--card-shadow);
+    }
+
+    .advisory-head {
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+      color: var(--sapphire-bright);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .advisory-head svg { width: 16px; height: 16px; color: var(--sapphire-bright); }
+
+    .advisory-content {
+      font-size: 0.85rem;
+      color: #ffffff;
+      font-weight: 500;
+      line-height: 1.6;
+      background: var(--s2);
+      border: 1px solid var(--b1);
+      border-radius: var(--r-sm);
+      padding: 14px 18px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       5. BOTTOM FEATURES: INCIDENT LOG & DIAGNOSTIC LAB
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .bottom-features {
+      max-width: 1800px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 0 32px 36px;
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap: 24px;
+    }
+
+    /* Diagnostic Incident Log Table */
+    .log-card {
+      background: var(--s1);
+      border: 1px solid var(--b1);
+      border-radius: var(--r-lg);
+      padding: 22px 26px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(24px) saturate(180%);
+      box-shadow: var(--card-shadow);
+    }
+
+    .card-hdr-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: var(--t1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: "Outfit", sans-serif;
+    }
+    .section-title svg { width: 18px; height: 18px; color: var(--gold-bright); }
+
+    .export-btn {
+      background: var(--s2);
+      border: 1px solid var(--b-gold);
+      border-radius: var(--r-sm);
+      color: var(--gold-bright);
+      padding: 6px 14px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.25s;
+      font-family: inherit;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.1);
+    }
+    .export-btn svg { width: 14px; height: 14px; }
+    .export-btn:hover {
+      color: #ffffff;
+      border-color: var(--gold-bright);
+      background: rgba(245, 158, 11, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .log-table-wrap {
+      overflow-x: auto;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      text-align: left;
+    }
+
+    .log-table th {
+      color: var(--t-gold);
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 1px;
+      padding: 12px 14px;
+      border-bottom: 1.5px solid var(--b1);
+      position: sticky;
+      top: 0;
+      background: rgba(9, 14, 32, 0.95);
+      backdrop-filter: blur(14px);
+    }
+
+    .log-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      font-weight: 500;
+      white-space: nowrap;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    }
+
+    .log-table tr:hover td {
+      background: rgba(22, 34, 68, 0.65);
+      color: #ffffff;
+    }
+
+    /* Offline Image Diagnostic Lab (Dropzone) */
+    .upload-card {
+      background: var(--s1);
+      border: 1px solid var(--b1);
+      border-radius: var(--r-lg);
+      padding: 22px 26px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(24px) saturate(180%);
+      box-shadow: var(--card-shadow);
+    }
+
+    .drop-zone {
+      border: 1.5px dashed var(--b-gold);
+      border-radius: var(--r-md);
+      background: var(--s2);
+      padding: 26px 18px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--gold-bright);
+      background: rgba(245, 158, 11, 0.12);
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .drop-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--s3);
+      display: grid;
+      place-items: center;
+      color: var(--gold-bright);
+      border: 1.5px solid var(--b-gold);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+    }
+    .drop-icon svg { width: 22px; height: 22px; }
+
+    .drop-title {
+      font-size: 0.94rem;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: "Outfit", sans-serif;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+    }
+    .drop-sub {
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+    }
+    #image-file-input { display: none; }
+
+    .upload-result {
+      margin-top: 14px;
+      padding: 14px 18px;
+      background: var(--s2);
+      border-radius: var(--r-sm);
+      border: 1.5px solid var(--b1);
+      font-size: 0.78rem;
+      display: none;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       6. ROYAL FOOTER
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 0.72rem;
+      color: var(--t3);
+      border-top: 1px solid var(--b1);
+      background: rgba(6, 9, 20, 0.85);
+      margin-top: auto;
+      letter-spacing: 0.2px;
+    }
+
+    /* RESPONSIVE LAYOUT */
+    @media (max-width: 1300px) {
+      .mode-tabs-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 1100px) {
+      .workspace { grid-template-columns: 1fr; }
+      .bottom-features { grid-template-columns: 1fr; }
+      header { padding: 14px 20px; }
+      .mode-bar-container { padding: 0 20px; margin-top: 14px; }
+      .workspace { padding: 18px 20px; }
+      .bottom-features { padding: 0 20px 28px; }
+    }
+    @media (max-width: 720px) {
+      .mode-tabs-grid { grid-template-columns: 1fr; }
+      .mode-bar-container { padding: 0 16px; margin-top: 12px; }
+      .mode-bar { padding: 14px 16px; }
+    }
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       7. DETERMINED CHICK WALK LOADING ANIMATION SYSTEM
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    /* Fullscreen Initial Boot & Modal Loader */
+    #app-boot-loader {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 36%, rgba(12, 18, 38, 0.94) 0%, rgba(5, 8, 18, 0.98) 100%);
+      backdrop-filter: blur(28px) saturate(180%);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+      transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s;
+    }
+    #app-boot-loader.loaded {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .chick-loader-card {
+      background: rgba(14, 22, 44, 0.88);
+      border: 1.5px solid rgba(251, 191, 36, 0.45);
+      border-radius: 24px;
+      padding: 38px 46px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.85), 0 0 45px rgba(245, 158, 11, 0.25);
+      max-width: 440px;
+      width: 90%;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+    }
+    .chick-loader-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--gold-bright), var(--emerald), transparent);
+    }
+    .chick-avatar-orb {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(14, 22, 44, 0.6) 70%, transparent 100%);
+      border: 2px solid rgba(251, 191, 36, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      box-shadow: 0 0 35px rgba(245, 158, 11, 0.35), inset 0 0 20px rgba(251, 191, 36, 0.2);
+    }
+    .chick-boot-anim {
+      width: 105px;
+      height: 105px;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
+    }
+    .boot-loader-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .boot-loader-brand h2 {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    }
+    .boot-badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--gold-bright);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      text-transform: uppercase;
+    }
+    .boot-loader-status {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 18px;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+      min-height: 22px;
+    }
+    .boot-progress-track {
+      width: 100%;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+    }
+    .boot-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #f59e0b, #fbbf24, #00f0a8);
+      border-radius: 10px;
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.8);
+      transition: width 0.35s ease;
+    }
+    .boot-flock-tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      color: var(--t-gold);
+      text-transform: uppercase;
+    }
+
+    /* Inline Chick Loader for Sample Diagnostic Lab */
+    .chick-analysis-loader {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: rgba(14, 22, 46, 0.88);
+      border: 1.5px solid rgba(251, 191, 36, 0.45);
+      border-radius: var(--r-md);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(245, 158, 11, 0.2);
+      margin-top: 14px;
+      backdrop-filter: blur(18px);
+    }
+    .chick-anim-bubble {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(251, 191, 36, 0.28) 0%, rgba(14, 22, 46, 0.8) 100%);
+      border: 1.5px solid rgba(251, 191, 36, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+    }
+    .chick-inline-anim {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+    }
+    .chick-analysis-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .chick-analysis-title {
+      font-size: 0.94rem;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: "Outfit", sans-serif;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    }
+    .chick-analysis-step {
+      font-size: 0.8rem;
+      color: var(--t-gold);
+      font-weight: 600;
+    }
+    .chick-inline-track {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .chick-inline-bar {
+      height: 100%;
+      width: 45%;
+      background: linear-gradient(90deg, var(--gold), var(--emerald));
+      border-radius: 10px;
+      animation: barSlide 1.2s infinite ease-in-out;
+    }
+    @keyframes barSlide {
+      0% { transform: translateX(-100%); }
+      50% { transform: translateX(100%); width: 70%; }
+      100% { transform: translateX(250%); }
+    }
+
+    /* Camera Live Card Searching State Overlay */
+    .cam-searching-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 14, 28, 0.88);
+      backdrop-filter: blur(20px);
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      gap: 14px;
+    }
+    .chick-cam-orb {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(10, 16, 32, 0.8) 100%);
+      border: 1.5px solid rgba(251, 191, 36, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.3);
+    }
+    .chick-cam-anim {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.6));
+    }
+    .cam-search-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: "Outfit", sans-serif;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+    }
+    .cam-search-sub {
+      font-size: 0.82rem;
+      color: var(--t-gold);
+      font-weight: 600;
+      max-width: 320px;
+      line-height: 1.45;
+    }
+
+    /* Camera Paused Overlay */
+    .cam-paused-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 16, 32, 0.88);
+      backdrop-filter: blur(18px);
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      gap: 14px;
+    }
+    .cam-paused-orb {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.22) 0%, rgba(10, 16, 32, 0.8) 100%);
+      border: 1.5px solid rgba(239, 68, 68, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    .cam-paused-orb svg {
+      width: 38px;
+      height: 38px;
+    }
+    .cam-paused-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: "Outfit", sans-serif;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+    }
+    .cam-paused-sub {
+      font-size: 0.82rem;
+      color: var(--t-gold);
+      font-weight: 600;
+      max-width: 340px;
+      line-height: 1.45;
+    }
+
+    /* Camera Power Button Special Styles */
+    .tool-btn#cam-power-btn {
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .tool-btn#cam-power-btn.active {
+      border-color: rgba(0, 240, 168, 0.65) !important;
+      background: rgba(0, 240, 168, 0.16) !important;
+      color: #00f0a8 !important;
+      box-shadow: 0 0 14px rgba(0, 240, 168, 0.25) !important;
+    }
+    .tool-btn#cam-power-btn.cam-off {
+      border-color: rgba(239, 68, 68, 0.55) !important;
+      background: rgba(239, 68, 68, 0.16) !important;
+      color: #f87171 !important;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.2) !important;
+    }
+  </style>
+
+</head>
+<body>
+
+  <!-- ━━ DETERMINED CHICK FULLSCREEN BOOT LOADER ━━ -->
+  <div id="app-boot-loader">
+    <div class="chick-loader-card">
+      <div class="chick-avatar-orb">
+        <img src="/static/animations/chick_walk_transparent.webp" onerror="this.onerror=null;this.src='/static/chick_walk_transparent.webp'" alt="Loading AvianGuard AI..." class="chick-boot-anim"/>
+      </div>
+      <div class="boot-loader-brand">
+        <h2>AvianGuard AI</h2>
+        <span class="boot-badge">Clinical Enterprise</span>
+      </div>
+      <p class="boot-loader-status" id="boot-status-text">Calibrating Avian Pathology &amp; Biosecurity Station...</p>
+      <div class="boot-progress-track">
+        <div class="boot-progress-bar" id="boot-progress-bar"></div>
+      </div>
+      <div class="boot-flock-tag">Flock Health &amp; Autonomous Disease Triage</div>
+    </div>
+  </div>
+
+  <!-- ━━ 1. APP HEADER ━━ -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+      </div>
+      <div class="brand-info">
+        <h1 class="brand-title-wrap">
+          <span class="brand-text-main">AvianGuard</span>
+          <span class="brand-text-ai">AI</span>
+          <span class="brand-badge">Clinical Enterprise</span>
+        </h1>
+        <p>Clinical Avian Pathology &amp; Biosecurity Diagnostic Intelligence Station</p>
+      </div>
+    </div>
+
+    <div class="hdr-tools">
+      <div class="pen-select-wrap">
+        <span>Flock Sector:</span>
+        <select class="pen-select" id="pen-selector">
+          <option value="Shed 1 - Broiler Pen A">Shed 1 - Broiler Pen A</option>
+          <option value="Shed 1 - Broiler Pen B">Shed 1 - Broiler Pen B</option>
+          <option value="Shed 2 - Layer House">Shed 2 - Layer House</option>
+          <option value="Shed 3 - Quarantine Ward">Shed 3 - Quarantine Ward</option>
+        </select>
+      </div>
+
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        LIVE CAM
+      </div>
+    </div>
+  </header>
+
+  <!-- ━━ 2. FLOATING DIAGNOSTIC FOCUS DECK (SEPARATED WITH SUNLIT GAP & 4-COLUMN SYMMETRIC GRID) ━━ -->
+  <div class="mode-bar-container">
+    <div class="mode-bar">
+      <div class="mode-bar-top-row">
+        <span class="mode-bar-title">
+          <span class="mode-title-dot"></span>
+          Diagnostic Focus Pipeline
+        </span>
+        <span class="mode-bar-subtitle">Active Neural Target Triage</span>
+      </div>
+
+      <div class="mode-tabs-grid">
+        <!-- Mode 1: Cranial / Head -->
+        <button class="mode-tab" id="tab-head" 
+                style="--tab-c:#fbbf24;--tab-glow:rgba(245,158,11,0.45);--tab-active-bg:rgba(245,158,11,0.22)" 
+                onclick="switchMode('head')">
+          <div class="mode-tab-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a7 7 0 0 1 14 0v2"/></svg>
+          </div>
+          <div class="mode-tab-content">
+            <span class="mode-tab-name">Cranial &amp; Facial Pathology</span>
+            <span class="mode-tag-pill">Cranial Pathology AI</span>
+          </div>
+        </button>
+
+        <!-- Mode 2: Fecal / Coprological -->
+        <button class="mode-tab" id="tab-fecal" 
+                style="--tab-c:#38bdf8;--tab-glow:rgba(56,189,248,0.45);--tab-active-bg:rgba(56,189,248,0.22)" 
+                onclick="switchMode('fecal')">
+          <div class="mode-tab-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="mode-tab-content">
+            <span class="mode-tab-name">Enteric &amp; Coprological Analysis</span>
+            <span class="mode-tag-pill">Coprological Diagnostic AI</span>
+          </div>
+        </button>
+
+        <!-- Mode 3: Physical Triage & Behavior -->
+        <button class="mode-tab" id="tab-triage" 
+                style="--tab-c:#34d399;--tab-glow:rgba(16,185,129,0.45);--tab-active-bg:rgba(16,185,129,0.22)" 
+                onclick="switchMode('triage')">
+          <div class="mode-tab-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="mode-tab-content">
+            <span class="mode-tab-name">Flock Health &amp; Behavioral Triage</span>
+            <span class="mode-tag-pill">Physical &amp; Behavioral Triage</span>
+          </div>
+        </button>
+
+        <!-- Mode 4: Consensus Ensemble -->
+        <button class="mode-tab active" id="tab-ensemble" 
+                style="--tab-c:#c084fc;--tab-glow:rgba(192,132,252,0.45);--tab-active-bg:rgba(192,132,252,0.22)" 
+                onclick="switchMode('ensemble')">
+          <div class="mode-tab-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <div class="mode-tab-content">
+            <span class="mode-tab-name">Multi-Spectrum Consensus</span>
+            <span class="mode-tag-pill">Consensus Ensemble Engine</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ━━ 3. MAIN WORKSPACE (SIDE BY SIDE) ━━ -->
+  <main class="workspace">
+
+    <!-- LEFT: LIVE CAMERA STREAM -->
+    <section class="cam-column">
+      <div class="cam-card">
+        <!-- Live Video Stream -->
+        <img id="live-feed" src="/video_feed" alt="Real-time Avian Diagnostic Camera Feed"/>
+
+        <!-- Viewfinder Reticles -->
+        <div class="reticle tl"></div>
+        <div class="reticle tr"></div>
+        <div class="reticle bl"></div>
+        <div class="reticle br"></div>
+
+        <!-- Scanning Beam -->
+        <div class="scan-beam"></div>
+
+        <!-- Camera Searching Chick Loader Overlay -->
+        <div class="cam-searching-overlay" id="cam-searching-overlay" style="display:none">
+          <div class="chick-cam-orb">
+            <img src="/static/animations/chick_walk_transparent.webp" onerror="this.onerror=null;this.src='/static/chick_walk_transparent.webp'" alt="Searching Hardware" class="chick-cam-anim"/>
+          </div>
+          <div class="cam-search-title">Hardware Scanner Active</div>
+          <div class="cam-search-sub" id="cam-search-msg">Auto-reconnect engine probing USB video endpoints...</div>
+        </div>
+
+        <!-- Camera Paused Frosted Overlay -->
+        <div class="cam-paused-overlay" id="cam-paused-overlay" style="display:none">
+          <div class="cam-paused-orb">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"/>
+            </svg>
+          </div>
+          <div class="cam-paused-title">Camera Stream Paused</div>
+          <div class="cam-paused-sub">Sensor standby active &bull; Click &ldquo;Camera: ON&rdquo; below to resume AI surveillance</div>
+        </div>
+
+        <!-- Camera HUD Overlays -->
+        <div class="cam-hud-top">
+          <div class="rec-indicator">
+            <div class="rec-pulse"></div>
+            REC &middot; LIVE
+          </div>
+          <div class="hud-stats">
+            <div class="hud-pill" id="hud-latency">-- ms</div>
+            <div class="hud-pill">FPS: 30</div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Camera Toolbar Below Video -->
+      <div class="cam-toolbar">
+        <div class="tool-group">
+          <!-- Camera Power ON/OFF Toggle (Placed near Confidence Gate) -->
+          <button class="tool-btn active" id="cam-power-btn" onclick="toggleCameraPower()" title="Toggle Camera Live Stream (ON / OFF)">
+            <svg class="cam-pwr-icon cam-on-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+            <svg class="cam-pwr-icon cam-off-icon" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"/>
+            </svg>
+            <span id="cam-power-text">Camera: ON</span>
+          </button>
+
+          <div class="slider-wrap">
+            <span>Confidence Gate:</span>
+            <input type="range" class="conf-slider" id="conf-slider" min="20" max="90" value="35" oninput="updateThreshold(this.value)"/>
+            <span class="slider-val" id="slider-val">35%</span>
+          </div>
+        </div>
+
+
+        <div class="tool-group">
+          <button class="tool-btn" onclick="captureSnapshot()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Capture Frame
+          </button>
+
+          <button class="tool-btn" id="rescan-cam-btn" onclick="reconnectCamera()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span id="rescan-btn-text">Rescan Camera</span>
+          </button>
+
+          <button class="tool-btn active" id="audio-toggle-btn" onclick="toggleAudioAlert()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <span id="audio-btn-text">Audio Alert: ON</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: DIAGNOSTIC CARDS -->
+    <section class="diag-column">
+
+      <!-- CARD 1: PRIMARY DETECTION -->
+      <div class="primary-card" id="primary-card">
+        <div class="card-top-row">
+          <span class="card-subtitle">PRIMARY DETECTION</span>
+          <span class="model-source-pill" id="p-source">Cranial Pathology AI</span>
+        </div>
+
+        <div class="disease-title" id="p-title">Scanning Environment...</div>
+
+        <div class="conf-metric-row">
+          <span>Diagnostic Confidence</span>
+          <span class="conf-pct-num" id="p-conf">--%</span>
+        </div>
+
+        <div class="conf-progress-track">
+          <div class="conf-progress-bar" id="p-bar"></div>
+        </div>
+
+        <!-- Symptom Guide -->
+        <div class="symptom-box" id="symptom-box">
+          <div class="symptom-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6 1 .5 1.5 1 2 3h4c.5-2 1-2.5 2-3 1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"/></svg>
+          </div>
+          <div class="symptom-text">
+            <strong>Symptom guide:</strong> <span id="p-hint">Align poultry in camera view for real-time pathology classification.</span>
+          </div>
+        </div>
+
+        <!-- Severity & Clinical Status -->
+        <div class="meta-badges-row">
+          <div class="severity-badge low" id="p-sev">Monitoring</div>
+          <span style="font-size:0.72rem;color:var(--t3)" id="p-status-sub">No anomalous condition active</span>
+        </div>
+      </div>
+
+      <!-- CARD 2: DIFFERENTIAL DIAGNOSIS -->
+      <div class="diff-card" id="diff-card">
+        <div class="diff-head">
+          <span>DIFFERENTIAL DIAGNOSIS</span>
+          <span id="diff-model-badge" style="font-size:0.65rem;color:var(--t-gold);font-family:'JetBrains Mono',monospace"></span>
+        </div>
+
+        <!-- Empty state text (when no alternative is detected) -->
+        <div class="diff-empty-msg" id="diff-empty">No alternative candidate detected</div>
+
+        <!-- Populated state (when an alternative is detected) -->
+        <div class="diff-candidate" id="diff-content">
+          <div class="diff-name-row">
+            <span class="diff-name" id="d-title">Coccidiosis</span>
+            <span class="conf-pct-num" id="d-conf">42%</span>
+          </div>
+          <div class="diff-bar-track">
+            <div class="diff-bar-fill" id="d-bar"></div>
+          </div>
+          <div class="diff-hint" id="d-hint">Alternative secondary indication based on visual biomarkers.</div>
+        </div>
+      </div>
+
+      <!-- CARD 3: VETERINARY ADVISORY & TREATMENT PROTOCOL -->
+      <div class="advisory-card">
+        <div class="advisory-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Recommended Veterinary Directive
+        </div>
+        <div class="advisory-content" id="p-action">
+          Flock parameters normal. Maintain routine hygiene, clean water chlorination, and daily temperature logging in accordance with poultry biosecurity regulations.
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ━━ 4. BOTTOM FEATURES: DIAGNOSTIC LOG & OFFLINE TESTER ━━ -->
+  <section class="bottom-features">
+
+    <!-- Feature 1: Diagnostic Event History Log -->
+    <div class="log-card">
+      <div class="card-hdr-bar">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Real-time Diagnostic Incident Log
+        </div>
+        <button class="export-btn" onclick="exportLogCSV()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+      </div>
+
+      <div class="log-table-wrap">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Flock Sector</th>
+              <th>Pathology</th>
+              <th>Confidence</th>
+              <th>Severity</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="log-tbody">
+            <tr>
+              <td colspan="6" style="text-align:center;color:var(--t3);padding:20px">Monitoring live feed &mdash; verified incidents will log automatically</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Feature 2: Offline Image Diagnostic Tester -->
+    <div class="upload-card">
+      <div class="card-hdr-bar">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Sample / Photo Diagnostic Lab
+        </div>
+      </div>
+
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('image-file-input').click()">
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        </div>
+        <div class="drop-title">Upload Poultry Image for Diagnostic Inspection</div>
+        <div class="drop-sub">Drag &amp; drop chicken photo or click to browse (JPG, PNG)</div>
+        <input type="file" id="image-file-input" accept="image/*" onchange="handleImageUpload(event)"/>
+      </div>
+
+      <div class="upload-result" id="upload-result">
+        <div style="font-weight:700;color:var(--t1);margin-bottom:6px" id="up-res-title">Diagnostic Analysis</div>
+        <div style="color:var(--t2);line-height:1.5" id="up-res-body">Result summary</div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ━━ FOOTER ━━ -->
+  <footer>
+    AvianGuard AI &middot; Clinical Avian Pathology &amp; Biosecurity Intelligence Core &middot; Autonomous Enterprise Surveillance
+  </footer>
+
+  <script>
+    // ━━ HELPER: CONTEXTUAL RELIABLE MODEL & ENGINE NAMES ━━
+    function formatClinicalSource(src) {
+      if (!src) return "Consensus Ensemble Engine";
+      const s = String(src).toLowerCase();
+      if (s.includes("general")) return "Cranial Pathology AI";
+      if (s.includes("fecal") || s.includes("copro")) return "Coprological Diagnostic AI";
+      if (s.includes("triage") || s.includes("appearance") || s.includes("behavior")) return "Physical & Behavioral Triage";
+      if (s.includes("classifier") || s.includes("best.pt")) return "Pathology Diagnostic Classifier";
+      if (s.includes("ensemble")) return "Consensus Ensemble Engine";
+      return src.replace(/\.(onnx|pt|h5)$/i, "");
+    }
+
+    // ━━ STATE & AUDIO SYSTEM ━━
+    let currentMode = "ensemble";
+    let isAudioAlertEnabled = true;
+    let lastAlertDisease = null;
+    let lastAlertTime = 0;
+    const diagnosticLog = [];
+
+    // Synthesized Web Audio Chime (Clean medical alert tone, no external files needed)
+    let audioCtx = null;
+    function playAlertChime(severity) {
+      if (!isAudioAlertEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        if (severity === "crit") {
+          // Double warning tone for Critical
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.setValueAtTime(740, now + 0.12);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else {
+          // Gentle chime for Elevated
+          osc.frequency.setValueAtTime(587.33, now); // D5
+          osc.frequency.setValueAtTime(880, now + 0.1);   // A5
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        }
+      } catch (e) {
+        console.warn("Audio chime error:", e);
+      }
+    }
+
+    function toggleAudioAlert() {
+      isAudioAlertEnabled = !isAudioAlertEnabled;
+      const btn = document.getElementById("audio-toggle-btn");
+      const txt = document.getElementById("audio-btn-text");
+      if (isAudioAlertEnabled) {
+        btn.classList.add("active");
+        txt.textContent = "Audio Alert: ON";
+      } else {
+        btn.classList.remove("active");
+        txt.textContent = "Audio Alert: OFF";
+      }
+    }
+
+    // ━━ MODE SWITCHER ━━
+    function switchMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll(".mode-tab").forEach(t => t.classList.remove("active"));
+      const tab = document.getElementById("tab-" + mode);
+      if (tab) tab.classList.add("active");
+
+      fetch("/set_mode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: mode })
+      }).catch(err => console.error("Error setting mode:", err));
+    }
+
+    // ━━ SENSITIVITY THRESHOLD SLIDER ━━
+    function updateThreshold(val) {
+      document.getElementById("slider-val").textContent = val + "%";
+      fetch("/set_threshold", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ threshold: parseFloat(val) / 100.0 })
+      }).catch(err => console.error("Error setting threshold:", err));
+    }
+
+    // ━━ CAMERA POWER TOGGLE (ON / OFF) ━━
+    let isCameraPoweredOn = true;
+    async function toggleCameraPower() {
+      isCameraPoweredOn = !isCameraPoweredOn;
+      const btn = document.getElementById("cam-power-btn");
+      const txt = document.getElementById("cam-power-text");
+      const onIcon = btn ? btn.querySelector(".cam-on-icon") : null;
+      const offIcon = btn ? btn.querySelector(".cam-off-icon") : null;
+      const liveFeed = document.getElementById("live-feed");
+      const pausedOverlay = document.getElementById("cam-paused-overlay");
+      const recIndicator = document.querySelector(".rec-indicator");
+      const liveBadge = document.querySelector(".live-badge");
+
+      if (isCameraPoweredOn) {
+        if (btn) {
+          btn.classList.add("active");
+          btn.classList.remove("cam-off");
+        }
+        if (onIcon) onIcon.style.display = "block";
+        if (offIcon) offIcon.style.display = "none";
+        if (txt) txt.textContent = "Camera: ON";
+        if (pausedOverlay) pausedOverlay.style.display = "none";
+        if (liveFeed) liveFeed.src = "/video_feed?t=" + Date.now();
+        if (recIndicator) {
+          recIndicator.innerHTML = '<div class="rec-pulse"></div> REC &middot; LIVE';
+          recIndicator.style.borderColor = "rgba(255, 51, 102, 0.35)";
+          recIndicator.style.color = "var(--crimson)";
+        }
+        if (liveBadge) {
+          liveBadge.innerHTML = '<div class="live-dot"></div> LIVE CAM';
+          liveBadge.style.color = "var(--emerald)";
+        }
+      } else {
+        if (btn) {
+          btn.classList.remove("active");
+          btn.classList.add("cam-off");
+        }
+        if (onIcon) onIcon.style.display = "none";
+        if (offIcon) offIcon.style.display = "block";
+        if (txt) txt.textContent = "Camera: OFF";
+        if (pausedOverlay) pausedOverlay.style.display = "flex";
+        if (liveFeed) liveFeed.src = "";
+        if (recIndicator) {
+          recIndicator.innerHTML = '<div class="rec-pulse" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></div> PAUSED';
+          recIndicator.style.borderColor = "rgba(245, 158, 11, 0.4)";
+          recIndicator.style.color = "var(--gold-bright)";
+        }
+        if (liveBadge) {
+          liveBadge.innerHTML = '<div class="live-dot" style="background:#ef4444;box-shadow:none"></div> CAM OFF';
+          liveBadge.style.color = "#f87171";
+        }
+      }
+
+      try {
+        await fetch("/toggle_camera", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled: isCameraPoweredOn })
+        });
+      } catch (err) {
+        console.warn("Error toggling camera:", err);
+      }
+    }
+
+    // ━━ MANUAL CAMERA RESCAN & AUTO-REBIND ━━
+    async function reconnectCamera() {
+      const btnText = document.getElementById("rescan-btn-text");
+      const originalText = btnText ? btnText.textContent : "Rescan Camera";
+      if (btnText) btnText.textContent = "Scanning...";
+      try {
+        const resp = await fetch("/reconnect_camera", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({})
+        });
+        const res = await resp.json();
+        if (res.connected) {
+          if (btnText) btnText.textContent = `Online (idx=${res.device_index})`;
+          setTimeout(() => { if (btnText) btnText.textContent = originalText; }, 2500);
+        } else {
+          if (btnText) btnText.textContent = "No Camera Found";
+          setTimeout(() => { if (btnText) btnText.textContent = originalText; }, 2500);
+        }
+      } catch (err) {
+        if (btnText) btnText.textContent = "Scan Error";
+        setTimeout(() => { if (btnText) btnText.textContent = originalText; }, 2500);
+      }
+    }
+
+    // ━━ STATUS POLLING & CARD UPDATES ━━
+    async function pollStatus() {
+      try {
+        const resp = await fetch("/status");
+        if (!resp.ok) return;
+        const data = await resp.json();
+        renderDetection(data);
+      } catch (e) {
+        // network or server busy
+      }
+    }
+
+    function renderDetection(data) {
+      const p = data.primary;
+      const d = data.secondary;
+      const ms = data.inference_ms || 0;
+
+      // Update Latency
+      document.getElementById("hud-latency").textContent = ms > 0 ? `${ms} ms` : "-- ms";
+
+      const pCard = document.getElementById("primary-card");
+      const pTitle = document.getElementById("p-title");
+      const pConf = document.getElementById("p-conf");
+      const pBar = document.getElementById("p-bar");
+      const pHint = document.getElementById("p-hint");
+      const pSource = document.getElementById("p-source");
+      const pSev = document.getElementById("p-sev");
+      const pStatusSub = document.getElementById("p-status-sub");
+      const pAction = document.getElementById("p-action");
+      const camStatusText = document.getElementById("cam-status-text");
+
+      const liveBadge = document.querySelector(".live-badge");
+      const isCamConnected = data.camera_connected !== false && data.error !== "camera_searching";
+      const camOverlay = document.getElementById("cam-searching-overlay");
+
+      // Check if camera is paused / switched off by user
+      if (data.camera_enabled === false || !isCameraPoweredOn) {
+        if (liveBadge) {
+          liveBadge.innerHTML = '<div class="live-dot" style="background:#ef4444;box-shadow:none"></div> CAM OFF';
+          liveBadge.style.borderColor = "rgba(239, 68, 68, 0.4)";
+          liveBadge.style.color = "#f87171";
+        }
+        if (camOverlay) camOverlay.style.display = "none";
+        pCard.style.setProperty("--det-border", "rgba(255, 255, 255, 0.22)");
+        pCard.style.setProperty("--det-glow", "rgba(239, 68, 68, 0.12)");
+        pCard.style.setProperty("--det-title-color", "#ffffff");
+        pTitle.textContent = "Camera Stream Paused";
+        pConf.textContent = "--%";
+        pBar.style.width = "0%";
+        pHint.textContent = "Camera power switched OFF via toolbar toggle. Click 'Camera: ON' at bottom to resume.";
+        pSource.textContent = "Standby";
+        pSev.className = "severity-badge low";
+        pSev.textContent = "PAUSED";
+        pStatusSub.textContent = "Sensor standby active";
+        pAction.textContent = "Live camera surveillance is paused. Click 'Camera: ON' next to the confidence slider to resume AI monitoring.";
+        if (camStatusText) camStatusText.textContent = "Camera Paused — Turn ON to resume monitoring";
+        return;
+      }
+
+      // Dynamic Live Cam indicator & searching overlay
+      if (!isCamConnected) {
+        if (liveBadge) {
+          liveBadge.innerHTML = '<div class="live-dot" style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></div> SEARCHING';
+          liveBadge.style.borderColor = "rgba(245, 158, 11, 0.4)";
+          liveBadge.style.color = "var(--gold-bright)";
+        }
+        if (camOverlay) camOverlay.style.display = "flex";
+      } else {
+        if (liveBadge) {
+          liveBadge.innerHTML = '<div class="live-dot"></div> LIVE CAM';
+          liveBadge.style.borderColor = "rgba(0, 240, 168, 0.35)";
+          liveBadge.style.color = "var(--emerald)";
+        }
+        if (camOverlay) camOverlay.style.display = "none";
+      }
+
+
+      if (!p || !p.label || p.label === "No Poultry Detected") {
+        // EMPTY STATE: Nothing in front of camera or no poultry detected
+        pCard.style.setProperty("--det-border", "rgba(255, 255, 255, 0.22)");
+        pCard.style.setProperty("--det-glow", "rgba(251, 191, 36, 0.12)");
+        pCard.style.setProperty("--det-title-color", "#ffffff");
+        pTitle.textContent = isCamConnected ? "Monitoring Environment..." : "Searching for Camera...";
+        pConf.textContent = "--%";
+        pBar.style.width = "0%";
+        pHint.textContent = isCamConnected
+          ? "Point camera at chicken, plumage, or droppings for live AI analysis."
+          : "Auto-reconnect engine scanning USB ports. Plug in or adjust camera cable.";
+        pSource.textContent = formatClinicalSource(data.mode || "ensemble");
+        pSev.className = "severity-badge low";
+        pSev.textContent = isCamConnected ? "STANDBY" : "SEARCHING";
+        pStatusSub.textContent = isCamConnected ? "Awaiting subject detection" : "Hardware scanner active";
+        pAction.textContent = isCamConnected
+          ? "Flock parameters normal. System standing by. Point camera at live poultry to trigger real-time AI disease classification."
+          : "Camera disconnected or re-enumerating. Background watchdog is probing /dev/video*. Feed will restore automatically once detected.";
+        if (camStatusText) {
+          camStatusText.textContent = isCamConnected
+            ? (data.connected_index !== undefined && data.connected_index !== null
+                ? `Ready — Camera active on /dev/video${data.connected_index}`
+                : "Ready — Point camera at chicken, comb, or droppings")
+            : "Searching for USB camera (/dev/video*) — auto-reconnecting...";
+        }
+      } else {
+        // VALID DETECTION ACTIVE
+        const label = p.label;
+        const confPct = Math.round(p.confidence * 100);
+        const col = p.color || "var(--gold-bright)";
+        const sev = p.severity || "Moderate";
+        const sevKey = p.sev_key || "med";
+
+        pCard.style.setProperty("--det-border", col);
+        pCard.style.setProperty("--det-glow", col + "26");
+        pCard.style.setProperty("--det-title-color", col);
+        pCard.style.setProperty("--det-bar-fill", col);
+
+        pTitle.textContent = label;
+        pConf.textContent = confPct + "%";
+        pBar.style.width = confPct + "%";
+        pHint.textContent = p.hint || "Clinical observation active.";
+        pSource.textContent = formatClinicalSource(p.source_model || data.mode);
+
+        pSev.className = "severity-badge " + sevKey;
+        pSev.textContent = sev;
+
+        if (label === "Healthy") {
+          pStatusSub.textContent = "No disease signs detected";
+          if (camStatusText) camStatusText.textContent = "Healthy Subject Detected (" + confPct + "%)";
+        } else {
+          pStatusSub.textContent = "Pathology confirmed — quarantine advisory active";
+          if (camStatusText) camStatusText.textContent = label + " detected (" + confPct + "%)";
+        }
+
+
+        if (p.action) {
+          pAction.textContent = p.action;
+        }
+
+        // Trigger Audio Chime if a severe disease is detected (throttled to once every 12 seconds per disease)
+        const now = Date.now();
+        if ((sevKey === "crit" || sevKey === "high") && (lastAlertDisease !== label || now - lastAlertTime > 12000)) {
+          playAlertChime(sevKey);
+          lastAlertDisease = label;
+          lastAlertTime = now;
+          logIncident(label, confPct, sev, sevKey);
+        }
+      }
+
+      // DIFFERENTIAL DIAGNOSIS
+      const diffEmpty = document.getElementById("diff-empty");
+      const diffContent = document.getElementById("diff-content");
+      const dTitle = document.getElementById("d-title");
+      const dConf = document.getElementById("d-conf");
+      const dBar = document.getElementById("d-bar");
+      const dHint = document.getElementById("d-hint");
+      const diffModelBadge = document.getElementById("diff-model-badge");
+
+      if (d && d.label && d.label !== (p ? p.label : "")) {
+        diffEmpty.style.display = "none";
+        diffContent.style.display = "flex";
+        dTitle.textContent = d.label;
+        const dPct = Math.round(d.confidence * 100);
+        dConf.textContent = dPct + "%";
+        dBar.style.width = dPct + "%";
+        dBar.style.background = d.color || "var(--sapphire)";
+        dHint.textContent = d.hint || "Alternative candidate detection.";
+        diffModelBadge.textContent = formatClinicalSource(d.source_model);
+      } else {
+        diffEmpty.style.display = "block";
+        diffContent.style.display = "none";
+        diffModelBadge.textContent = "";
+      }
+    }
+
+    // ━━ INCIDENT LOGGING ━━
+    function logIncident(disease, conf, sev, sevKey) {
+      const pen = document.getElementById("pen-selector").value;
+      const timeStr = new Date().toLocaleTimeString();
+      diagnosticLog.unshift({ time: timeStr, pen, disease, conf: conf + "%", sev, status: "Flagged" });
+
+      const tbody = document.getElementById("log-tbody");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-family:'JetBrains Mono',monospace;color:var(--t1)">${timeStr}</td>
+        <td>${pen}</td>
+        <td style="font-weight:700;color:var(--t1)">${disease}</td>
+        <td style="font-family:'JetBrains Mono',monospace">${conf}%</td>
+        <td><span class="severity-badge ${sevKey}" style="font-size:0.62rem;padding:3px 8px">${sev}</span></td>
+        <td style="color:var(--gold-bright);font-weight:600">Immediate Inspection</td>
+      `;
+      if (diagnosticLog.length === 1) {
+        tbody.innerHTML = "";
+      }
+      tbody.prepend(tr);
+    }
+
+    function exportLogCSV() {
+      if (diagnosticLog.length === 0) {
+        alert("No incidents recorded in this session yet.");
+        return;
+      }
+      let csv = "Timestamp,Flock Sector,Pathology Detected,Confidence,Severity,Recommended Action\n";
+      diagnosticLog.forEach(row => {
+        csv += `"${row.time}","${row.pen}","${row.disease}","${row.conf}","${row.sev}","${row.status}"\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `AvianGuard_Diagnostic_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    }
+
+    // ━━ SNAPSHOT CAPTURE ━━
+    function captureSnapshot() {
+      const img = document.getElementById("live-feed");
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth || 640;
+      canvas.height = img.naturalHeight || 480;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+
+      // Add watermark & timestamp banner
+      ctx.fillStyle = "rgba(6, 8, 20, 0.88)";
+      ctx.fillRect(0, canvas.height - 42, canvas.width, 42);
+      ctx.font = "14px 'Outfit', sans-serif";
+      ctx.fillStyle = "#fbbf24";
+      ctx.fillText("AvianGuard AI Clinical Pathology Capture", 16, canvas.height - 16);
+      ctx.fillStyle = "#94a3b8";
+      ctx.fillText(new Date().toLocaleString(), canvas.width - 220, canvas.height - 16);
+
+      const link = document.createElement("a");
+      link.download = `Avian_Pathology_${Date.now()}.jpg`;
+      link.href = canvas.toDataURL("image/jpeg", 0.92);
+      link.click();
+    }
+
+    // ━━ OFFLINE IMAGE DIAGNOSTIC TESTER ━━
+    async function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const fd = new FormData();
+      fd.append("image", file);
+      fd.append("mode", currentMode);
+
+      const resBox = document.getElementById("upload-result");
+      const resTitle = document.getElementById("up-res-title");
+      const resBody = document.getElementById("up-res-body");
+      resBox.style.display = "block";
+      resTitle.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:38px;height:38px;border-radius:50%;background:rgba(251,191,36,0.22);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(251,191,36,0.5);box-shadow:0 0 14px rgba(245,158,11,0.25);flex-shrink:0">
+            <img src="/static/animations/chick_walk_transparent.webp" onerror="this.onerror=null;this.src='/static/chick_walk_transparent.webp'" style="width:32px;height:32px;object-fit:contain"/>
+          </div>
+          <span style="color:#ffffff;font-size:0.96rem;font-weight:800;letter-spacing:-0.2px">Avian Pathology AI Diagnostic Engine Active</span>
+        </div>
+      `;
+      resBody.innerHTML = `
+        <div style="padding:10px 0 6px;color:var(--t-gold);font-weight:600;font-size:0.84rem;display:flex;align-items:center;gap:8px">
+          <span>Executing multi-model consensus &amp; anatomical lesion analysis...</span>
+        </div>
+        <div class="chick-inline-track"><div class="chick-inline-bar"></div></div>
+      `;
+
+      try {
+        const resp = await fetch("/predict_image", { method: "POST", body: fd });
+        const res = await resp.json();
+
+        // Check for non-poultry subject rejection
+        if (res.has_subject === false || res.error === "no_poultry_detected") {
+          resTitle.textContent = "⚠️ No Poultry Subject Detected";
+          resTitle.style.color = "var(--gold-bright)";
+          resBody.innerHTML = `
+            <div style="padding: 14px 18px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.45); color: #fbbf24; font-size: 0.85rem; line-height: 1.55;">
+              <div style="font-weight: 800; font-size: 0.95rem; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                <span>⚠️ NON-POULTRY IMAGE REJECTED</span>
+              </div>
+              <div style="color: var(--t1); margin-bottom: 8px; font-weight: 600;">
+                ${res.user_message || res.override_reason || "Kindly upload a clear image of a chicken, poultry flock, or droppings to predict disease."}
+              </div>
+              <div style="color: var(--t2); font-size: 0.76rem;">
+                AvianGuard AI automatically filters out non-avian subjects (automobiles, furniture, household pets, human portraits, or landscapes) to safeguard veterinary diagnostic integrity.
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        if (res.primary) {
+          const conf = Math.round(res.primary.confidence * 100);
+          resTitle.textContent = res.primary.label + " (" + conf + "%)";
+          resTitle.style.color = res.primary.color || "var(--gold-bright)";
+          
+          const domainLabel = res.segregation_context === 'HEAD_COMB' 
+            ? 'Cranial & Facial Pathology AI' 
+            : (res.segregation_context === 'FECAL' ? 'Coprological Diagnostic AI' : 'Physical & Behavioral Triage');
+          
+          const agentBadge = res.segregation_context 
+            ? `<div style="display:inline-block;padding:3px 11px;border-radius:100px;background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.35);color:var(--gold-bright);font-size:0.72rem;font-weight:700;margin-bottom:8px">🎯 Agent Routing: ${domainLabel}</div>` 
+            : '';
+          
+          let overrideHtml = '';
+          if (res.clinical_override) {
+            overrideHtml = `
+              <div style="margin: 8px 0 10px; padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 0.76rem; line-height: 1.45;">
+                <div style="font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; color: #fef08a;">
+                  <span>⚡ AGENT CLINICAL ERROR-CORRECTION</span>
+                </div>
+                <div>${res.override_reason || "Base model misclassification intercepted and corrected based on anatomical lesion analysis and multi-model consensus."}</div>
+              </div>
+            `;
+          }
+
+          let metricsHtml = '';
+          if (res.anatomical_metrics) {
+            const m = res.anatomical_metrics;
+            if (m.comb_vitality_pct !== undefined) {
+              metricsHtml = `
+                <div style="margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid var(--b1); font-size: 0.74rem; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div><span style="color:var(--t3)">Comb Vitality:</span> <strong style="color:var(--t1)">${m.comb_vitality_pct}%</strong></div>
+                  <div><span style="color:var(--t3)">Necrosis Index:</span> <strong style="color:${m.necrotic_index_pct > 20 ? 'var(--crimson)' : 'var(--emerald)'}">${m.necrotic_index_pct}%</strong></div>
+                  <div style="grid-column: 1 / -1;"><span style="color:var(--t3)">Tissue Evaluation:</span> <strong style="color:var(--gold-bright)">${m.health_evaluation || 'Analyzed'}</strong></div>
+                </div>
+              `;
+            } else if (m.blood_index_pct !== undefined) {
+              metricsHtml = `
+                <div style="margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid var(--b1); font-size: 0.74rem; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div><span style="color:var(--t3)">Hemorrhage Index:</span> <strong style="color:${m.blood_index_pct > 15 ? 'var(--crimson)' : 'var(--t1)'}">${m.blood_index_pct}%</strong></div>
+                  <div><span style="color:var(--t3)">Bile Index:</span> <strong style="color:var(--emerald)">${m.green_index_pct}%</strong></div>
+                </div>
+              `;
+            }
+          }
+
+          let diffHtml = '';
+          if (res.differential_diagnosis && res.differential_diagnosis.length > 0) {
+            diffHtml = `<div style="margin-top:6px;font-size:0.74rem;color:var(--t2)"><strong>Differential Suspects:</strong> ${res.differential_diagnosis.join(', ')}</div>`;
+          }
+
+          let knowHtml = '';
+          if (res.disease_knowledge && res.disease_knowledge.etiology) {
+            knowHtml = `
+              <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--b1);font-size:0.72rem;color:var(--t2)">
+                <div><strong>Etiology:</strong> ${res.disease_knowledge.etiology}</div>
+                ${res.disease_knowledge.management ? `<div style="margin-top:4px"><strong>Bio-Management:</strong> ${res.disease_knowledge.management}</div>` : ''}
+              </div>
+            `;
+          }
+
+          const clinicalSource = formatClinicalSource(res.primary.source_model || "ensemble");
+          resBody.innerHTML = `
+            ${agentBadge}
+            ${overrideHtml}
+            <div><strong>Clinical Engine:</strong> ${clinicalSource} | <strong>Severity:</strong> ${res.primary.severity || "Moderate"}</div>
+            ${metricsHtml}
+            <div style="margin-top:5px">${res.primary.hint || ""}</div>
+            <div style="margin-top:7px;font-size:0.74rem;color:var(--sapphire-bright)"><strong>Veterinary Directive:</strong> ${res.primary.action || "Consult avian veterinarian."}</div>
+            ${diffHtml}
+            ${knowHtml}
+          `;
+          logIncident(res.primary.label, conf, res.primary.severity || "Moderate", res.primary.sev_key || "med");
+        } else {
+          resTitle.textContent = "No Pathology Identified";
+          resTitle.style.color = "var(--emerald)";
+          resBody.textContent = "The uploaded sample indicates healthy flock traits with no observable lesions or biometric anomalies.";
+        }
+      } catch (err) {
+        resTitle.textContent = "Analysis Failed";
+        resBody.textContent = err.message || "Could not process image.";
+      }
+    }
+
+    // Drag and Drop styling
+    const dropZone = document.getElementById("drop-zone");
+    ["dragenter", "dragover"].forEach(name => {
+      dropZone.addEventListener(name, (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
+    });
+    ["dragleave", "drop"].forEach(name => {
+      dropZone.addEventListener(name, (e) => { e.preventDefault(); dropZone.classList.remove("dragover"); });
+    });
+    dropZone.addEventListener("drop", (e) => {
+      const dt = e.dataTransfer;
+      if (dt.files && dt.files[0]) {
+        document.getElementById("image-file-input").files = dt.files;
+        handleImageUpload({ target: { files: dt.files } });
+      }
+    });
+
+    // Start Polling every 400ms for high responsiveness
+    setInterval(pollStatus, 400);
+    pollStatus();
+
+    // ━━ APP BOOT LOADER INITIALIZATION (CHICK WALK INTRO) ━━
+    window.addEventListener("DOMContentLoaded", () => {
+      const bootLoader = document.getElementById("app-boot-loader");
+      const bootBar = document.getElementById("boot-progress-bar");
+      const bootText = document.getElementById("boot-status-text");
+
+      const steps = [
+        { pct: 30, msg: "Connecting to Edge Inference Engine..." },
+        { pct: 60, msg: "Loading Cranial & Coprological AI Models..." },
+        { pct: 85, msg: "Calibrating Optical Reticle & Biosecurity Sensors..." },
+        { pct: 100, msg: "Flock Health Intelligence Active!" }
+      ];
+
+      let stepIdx = 0;
+      const interval = setInterval(() => {
+        if (stepIdx < steps.length) {
+          if (bootBar) bootBar.style.width = steps[stepIdx].pct + "%";
+          if (bootText) bootText.textContent = steps[stepIdx].msg;
+          stepIdx++;
+        } else {
+          clearInterval(interval);
+          setTimeout(() => {
+            if (bootLoader) bootLoader.classList.add("loaded");
+          }, 350);
+        }
+      }, 220);
+    });
+  </script>
+</body>
+</html>

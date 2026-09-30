@@ -1,0 +1,21 @@
+# ── Raspberry Pi 4 — Debian Bookworm arm64 ───────────────────────────────────
+# Install inside a venv (see SETUP.md).
+# Do NOT install into system Python on Bookworm — it is externally managed.
+
+# Core web
+Flask==3.1.0
+Werkzeug==3.1.3
+
+# Computer vision (headless — no GUI/Qt deps on the Pi)
+opencv-python-headless==4.10.0.84
+
+# ONNX Runtime — fastest inference on Cortex-A72, no PyTorch needed at runtime
+# arm64 wheel available from PyPI for Python 3.11 (Bookworm default)
+onnxruntime==1.20.1
+
+# NumPy (onnxruntime 1.20 requires <2.0)
+numpy==1.26.4
+
+# Ultralytics — needed ONLY for .pt fallback and for convert_to_onnx.py
+# Comment out after exporting to .onnx to save ~500 MB RAM on the Pi
+ultralytics==8.3.40
