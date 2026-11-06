@@ -1,0 +1,65 @@
+# ======================================================================
+# AvianGuard AI - .gitignore
+# ======================================================================
+
+# --- Environment Variables, Secrets & API Credentials ---
+.env
+.env.*
+!.env.example
+.env.txt
+credentials.json
+*.pem
+*.key
+*.cert
+secrets.json
+
+# --- Python Bytecode & Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# --- Virtual Environments ---
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# --- Temporary & Development Scratch Dumps ---
+scratch/
+tmp/
+temp/
+*.log
+*.tmp
+*.bak
+
+# --- Operating System Files ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# --- Training / Model Checkpoints & Runs ---
+runs/
+*.pt.backup
+*.onnx.backup
+checkpoints/
+
+# --- Local Saved Snapshots ---
+# (Uncomment below if runtime captures shouldn't be committed)
+# prediction_images/*.jpg
+# prediction_images/*.jfif

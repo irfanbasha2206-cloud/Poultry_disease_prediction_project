@@ -28,6 +28,7 @@ import numpy as np
 
 from predictor import (PoultryPredictor, PredictionResult,
                        Detection, LABEL_COLORS, DEFAULT_COLOR, VALID_MODES)
+from gemini_verifier import get_verifier_engine, _crop_with_padding
 
 JPEG_QUALITY     = 50
 INFER_INTERVAL_S = 0.50
@@ -37,82 +38,130 @@ STREAM_FPS       = 30
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 1. INTELLIGENT HARDWARE ENUMERATION & PROBING
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+BLACKLIST_KEYWORDS = (
+    "codec", "isp", "m2m", "unicam", "decoder", "encoder",
+    "rpivid", "pisp", "dummy", "meta", "stats", "embedded",
+)
+
+try:
+    from picamera2 import Picamera2  # type: ignore
+    _HAS_PICAMERA2 = True
+except Exception:
+    _HAS_PICAMERA2 = False
+
+
+class Picamera2Wrapper:
+    """Wrapper around Picamera2 (Raspberry Pi CSI Camera) providing an OpenCV-like interface."""
+    def __init__(self, width: int = FRAME_W, height: int = FRAME_H):
+        self._picam2 = Picamera2()
+        config = self._picam2.create_video_configuration(
+            main={"size": (width, height), "format": "RGB888"}
+        )
+        self._picam2.configure(config)
+        self._picam2.start()
+        self._is_opened = True
+
+    def isOpened(self) -> bool:
+        return self._is_opened
+
+    def read(self) -> tuple[bool, Optional[np.ndarray]]:
+        if not self._is_opened:
+            return False, None
+        try:
+            rgb = self._picam2.capture_array()
+            if rgb is not None and rgb.size > 0:
+                bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+                return True, bgr
+        except Exception:
+            pass
+        return False, None
+
+    def release(self):
+        self._is_opened = False
+        try:
+            self._picam2.stop()
+            self._picam2.close()
+        except Exception:
+            pass
+
+
+def _is_blacklisted_device(node_path: str) -> bool:
+    """Checks if a Linux /sys/class/video4linux/videoX node is hardware codec/isp/metadata."""
+    name_file = os.path.join(node_path, "name")
+    if os.path.isfile(name_file):
+        try:
+            with open(name_file, "r") as f:
+                name = f.read().lower()
+            if any(k in name for k in BLACKLIST_KEYWORDS):
+                return True
+        except Exception:
+            pass
+
+    index_file = os.path.join(node_path, "index")
+    if os.path.isfile(index_file):
+        try:
+            with open(index_file, "r") as f:
+                idx_str = f.read().strip()
+            # In Linux UVC, index 0 is video capture, index 1 is metadata stream
+            if idx_str not in ("", "0"):
+                return True
+        except Exception:
+            pass
+
+    return False
+
+
 def get_candidate_camera_sources(preferred_source: int = 0) -> list[int]:
     """
-    Returns an intelligent, ordered list of camera indices to probe.
-    Prioritizes real USB webcams over Pi ISP/codec nodes.
+    Returns an intelligent, ordered list of genuine camera indices to probe.
+    Strictly filters out ISP, codec, and metadata nodes to prevent hanging.
     """
     candidates = []
 
-    # 1. Preferred source first
-    candidates.append(preferred_source)
-
-    # 2. Linux / Raspberry Pi Hardware Inspection
     if os.name != "nt":
-        # /dev/v4l/by-id/* symlinks point directly to physical USB webcams
+        # 1. /dev/v4l/by-id/* symlinks point directly to physical USB webcams!
         try:
             for p in sorted(glob.glob("/dev/v4l/by-id/*")):
-                # In Linux, index0 is video capture, index1 is metadata
                 if "index0" in p or not any(f"index{k}" in p for k in range(1, 10)):
                     real_path = os.path.realpath(p)
                     m = re.search(r"video(\d+)", real_path)
                     if m:
                         idx = int(m.group(1))
-                        if idx not in candidates:
+                        node = f"/sys/class/video4linux/video{idx}"
+                        if not _is_blacklisted_device(node) and idx not in candidates:
                             candidates.append(idx)
         except Exception:
             pass
 
-        # /sys/class/video4linux to identify real camera names vs bcm2835-codec
+        # 2. Inspect /sys/class/video4linux for valid camera devices
         try:
-            usb_nodes = []
-            other_nodes = []
-            for node in glob.glob("/sys/class/video4linux/video*"):
+            for node in sorted(glob.glob("/sys/class/video4linux/video*")):
+                if _is_blacklisted_device(node):
+                    continue
                 m = re.search(r"video(\d+)", node)
                 if not m:
                     continue
                 idx = int(m.group(1))
-                name_file = os.path.join(node, "name")
-                name = ""
-                if os.path.exists(name_file):
-                    try:
-                        with open(name_file, "r") as f:
-                            name = f.read().lower()
-                    except Exception:
-                        pass
-                # Check for camera / webcam keywords (not codec / isp / unicam-dummy)
-                if any(k in name for k in ["usb", "camera", "webcam", "uvc", "cam"]):
-                    usb_nodes.append(idx)
-                else:
-                    other_nodes.append(idx)
-
-            for idx in sorted(usb_nodes):
                 if idx not in candidates:
                     candidates.append(idx)
-            for idx in sorted(other_nodes):
-                if idx not in candidates and idx < 16:
-                    candidates.append(idx)
         except Exception:
             pass
 
-        # Direct /dev/video* fallback
-        try:
-            for dev in sorted(glob.glob("/dev/video*")):
-                m = re.search(r"video(\d+)", dev)
-                if m:
-                    idx = int(m.group(1))
-                    if idx not in candidates and idx < 16:
-                        candidates.append(idx)
-        except Exception:
-            pass
-
-    # 3. Numeric sweep fallback (0 to 10)
-    for i in range(10):
-        if i not in candidates:
-            candidates.append(i)
+        # 3. Add preferred_source if not blacklisted
+        pref_node = f"/sys/class/video4linux/video{preferred_source}"
+        if preferred_source not in candidates:
+            if not os.path.exists(pref_node) or not _is_blacklisted_device(pref_node):
+                candidates.insert(0, preferred_source)
+    else:
+        # Windows: probe preferred and top indices
+        candidates = [preferred_source]
+        for i in range(3):
+            if i not in candidates:
+                candidates.append(i)
 
     return candidates
 
@@ -120,7 +169,7 @@ def get_candidate_camera_sources(preferred_source: int = 0) -> list[int]:
 def _probe_single_camera(idx: int, backend=None, fourcc_str: str = "MJPG") -> Optional[cv2.VideoCapture]:
     """
     Attempts to open a camera index with a specific backend and FOURCC.
-    Verifies actual frame delivery before declaring success.
+    Verifies actual frame delivery without long blocking loops.
     """
     cap = None
     try:
@@ -134,6 +183,18 @@ def _probe_single_camera(idx: int, backend=None, fourcc_str: str = "MJPG") -> Op
                 cap.release()
             return None
 
+        # Set fast timeout if supported by OpenCV build
+        if hasattr(cv2, "CAP_PROP_OPEN_TIMEOUT_MSEC"):
+            try:
+                cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 1500)
+            except Exception:
+                pass
+        if hasattr(cv2, "CAP_PROP_READ_TIMEOUT_MSEC"):
+            try:
+                cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 1500)
+            except Exception:
+                pass
+
         # Critical for Raspberry Pi: set MJPG to prevent USB bus bandwidth saturation
         if fourcc_str:
             try:
@@ -146,19 +207,19 @@ def _probe_single_camera(idx: int, backend=None, fourcc_str: str = "MJPG") -> Op
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
-        # Warm up sensor: some USB cameras take 2-4 read attempts before delivering the first frame
-        for _ in range(5):
+        # Fast read probe (max 2 quick attempts)
+        for _ in range(2):
             ok, frame = cap.read()
             if ok and frame is not None and frame.size > 0:
-                actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or FRAME_W
+                actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or FRAME_H
                 b_name = "V4L2" if backend == getattr(cv2, "CAP_V4L2", None) else (str(backend) if backend else "default")
-                print(f"[camera] SUCCESS: Bound to index={idx} ({b_name}, {fourcc_str or 'raw'}, {actual_w}x{actual_h})")
+                print(f"[camera] SUCCESS: Bound to USB index={idx} ({b_name}, {fourcc_str or 'raw'}, {actual_w}x{actual_h})")
                 return cap
             time.sleep(0.04)
 
         cap.release()
-    except Exception as exc:
+    except Exception:
         if cap:
             try:
                 cap.release()
@@ -167,23 +228,40 @@ def _probe_single_camera(idx: int, backend=None, fourcc_str: str = "MJPG") -> Op
     return None
 
 
-def open_camera_auto(preferred_source: int = 0) -> tuple[Optional[cv2.VideoCapture], Optional[int]]:
+def open_camera_auto(preferred_source: int = 0) -> tuple[Optional[object], Optional[int | str]]:
     """
-    Scans all candidate indices with multiple backends and formats.
-    Returns (cap, idx) on success, or (None, None) if no camera is available.
+    Scans candidate camera sources and returns (cap_obj, idx_or_id).
+    Supports:
+      1. Picamera2 (Raspberry Pi CSI Camera Module v1/v2/v3/HQ)
+      2. USB Webcams via OpenCV (V4L2 / DShow / MSMF)
+    Guaranteed zero-hang on ISP / hardware codec nodes.
     """
+    # 1. Raspberry Pi CSI Camera check via Picamera2
+    if _HAS_PICAMERA2:
+        try:
+            picam = Picamera2Wrapper()
+            ok, test_f = picam.read()
+            if ok and test_f is not None:
+                print("[camera] SUCCESS: Raspberry Pi CSI Camera active via Picamera2")
+                return picam, "csi"
+            picam.release()
+        except Exception:
+            pass
+
+    # 2. USB Camera candidates
+    candidates = get_candidate_camera_sources(preferred_source)
+    if not candidates:
+        return None, None
+
     backends = []
     if os.name != "nt" and hasattr(cv2, "CAP_V4L2"):
         backends.append(cv2.CAP_V4L2)
-    if hasattr(cv2, "CAP_DSHOW"):
+    elif hasattr(cv2, "CAP_DSHOW"):
         backends.append(cv2.CAP_DSHOW)
-    if hasattr(cv2, "CAP_MSMF"):
+    elif hasattr(cv2, "CAP_MSMF"):
         backends.append(cv2.CAP_MSMF)
-    backends.append(None)  # cv2.CAP_ANY / default
+    backends.append(None)
 
-    candidates = get_candidate_camera_sources(preferred_source)
-    # First pass: try with MJPG (fastest on USB 2.0 / Pi 4)
-    # Second pass: fallback to uncompressed / raw
     for fourcc in ["MJPG", ""]:
         for backend in backends:
             for idx in candidates:
@@ -218,20 +296,73 @@ class _LabelSmoother:
         return det
 
 
+def get_clean_display_label(raw_label: str, is_healthy: bool, mode: str) -> str:
+    """
+    Returns concise, standard display labels: Healthy, Normal, Abnormal, Unhealthy, or clean Disease Name.
+    Guarantees no awkward prefixes like '[Gemini: Resting]' or 'Healthy (Resting)'.
+    """
+    l_str = (raw_label or "").strip()
+    l_lower = l_str.lower()
+
+    # 1. Named diseases take absolute priority when present in diagnosis
+    if "salmonell" in l_lower:
+        return "Salmonellosis"
+    if "coccidiosis" in l_lower or "coccidi" in l_lower:
+        return "Coccidiosis"
+    if "newcastle" in l_lower:
+        return "Newcastle Disease"
+    if "fowl pox" in l_lower or "pox" in l_lower:
+        return "Fowl Pox"
+    if "coryza" in l_lower:
+        return "Infectious Coryza"
+    if "crd" in l_lower or "chronic respiratory" in l_lower:
+        return "CRD (Chronic Respiratory)"
+    if "favus" in l_lower:
+        return "Favus"
+    if "weak leg" in l_lower:
+        return "Weak Leg Syndrome"
+    if "bumblefoot" in l_lower:
+        return "Bumblefoot"
+
+    # 2. Explicit abnormal / unhealthy
+    if not is_healthy and ("abnormal" in l_lower or "unhealthy" in l_lower):
+        return "Abnormal"
+
+    # 3. Healthy / Normal
+    if is_healthy or "healthy" in l_lower or l_lower in ("normal", "normal resting", "resting"):
+        return "Normal" if mode == "triage" else "Healthy"
+
+    if mode == "triage":
+        return "Abnormal"
+
+    return l_str or "Abnormal"
+
+
 def _overlay_detection(frame: np.ndarray, det: Detection) -> np.ndarray:
+    """
+    Draws a clean, high-visibility bounding box and label without verbose tags.
+    """
     out = frame.copy()
     x1, y1, x2, y2 = map(int, det.box)
     h, w = out.shape[:2]
     x1, y1 = max(0, x1), max(0, y1)
     x2, y2 = min(w - 1, x2), min(h - 1, y2)
-    color = LABEL_COLORS.get(det.label, DEFAULT_COLOR)
+
+    lbl = det.label.strip()
+    if lbl in ("Healthy", "Normal", "Healthy (Resting)"):
+        color = (0, 215, 80)      # Emerald green (BGR)
+    elif lbl in ("Abnormal", "Unhealthy"):
+        color = (200, 0, 200)    # Magenta (BGR)
+    else:
+        color = LABEL_COLORS.get(lbl, (0, 140, 255))
+
     cv2.rectangle(out, (x1, y1), (x2, y2), color, 2)
-    tag = f"{det.label}  {det.confidence:.0%}"
-    (tw, th), _ = cv2.getTextSize(tag, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
+    tag = f"{lbl}  {det.confidence:.0%}"
+    (tw, th), _ = cv2.getTextSize(tag, cv2.FONT_HERSHEY_SIMPLEX, 0.65, 2)
     yt = max(y1, th + 10)
-    cv2.rectangle(out, (x1, yt - th - 10), (x1 + tw + 8, yt), color, -1)
-    cv2.putText(out, tag, (x1 + 4, yt - 5),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
+    cv2.rectangle(out, (x1, yt - th - 10), (x1 + tw + 10, yt), color, -1)
+    cv2.putText(out, tag, (x1 + 5, yt - 5),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2, cv2.LINE_AA)
     return out
 
 
@@ -268,6 +399,13 @@ class PoultryVideoCamera:
         self._running        = True
         self._mode_changed   = False
         self._is_enabled     = True
+
+        # Stage-2 Gemini Multimodal Verifier & Temporal Buffer
+        self._verifier_engine = get_verifier_engine()
+        self._temporal_buffer = collections.deque(maxlen=10)
+        self._last_buf_time   = 0.0
+        self._last_yolo_label: Optional[str] = None
+        self._no_subject_count = 0
 
         # Initial attempt to open camera
         print(f"[camera] Initializing camera subsystem (preferred source={source})...")
@@ -334,28 +472,29 @@ class PoultryVideoCamera:
     def _watchdog_loop(self):
         """
         Active Guardian Thread:
-        Monitors camera health every 1.5 seconds.
+        Monitors camera health.
         If camera is missing, unplugged, or stream stalls, it auto-reconnects.
         """
         while self._running:
-            time.sleep(1.5)
-
             with self._lock:
                 enabled   = self._is_enabled
                 connected = self._is_connected
                 has_cap   = self._cap is not None
                 last_time = self._last_frame_time
 
+            sleep_time = 1.5 if connected else 2.5
+            time.sleep(sleep_time)
+
             if not enabled:
                 continue
 
             now = time.time()
-            stalled = (now - last_time > 3.0) and has_cap
+            stalled = (now - last_time > 3.5) and has_cap
 
             # Trigger reconnection if disconnected or stalled
             if not connected or not has_cap or stalled:
                 if stalled:
-                    print(f"[watchdog] Camera feed stalled (>3.0s without frame). Triggering auto-recovery...")
+                    print(f"[watchdog] Camera feed stalled (>3.5s without frame). Triggering auto-recovery...")
                 self._perform_reconnect()
 
     def _capture_loop(self):
@@ -385,12 +524,35 @@ class PoultryVideoCamera:
                 continue
 
             consecutive_fails = 0
+            now = time.time()
             with self._lock:
                 self._raw = frame
                 self._is_connected = True
-                self._last_frame_time = time.time()
+                self._last_frame_time = now
+                if now - self._last_buf_time >= 1.4:
+                    self._temporal_buffer.append((now, frame.copy()))
+                    self._last_buf_time = now
 
             time.sleep(0.002)
+
+    def _get_3_temporal_frames(self, current_frame: np.ndarray) -> list[np.ndarray]:
+        with self._lock:
+            buf = list(self._temporal_buffer)
+        now = time.time()
+        f_t3 = None
+        f_t15 = None
+        for ts, f in buf:
+            dt = now - ts
+            if dt >= 2.5 and f_t3 is None:
+                f_t3 = f
+            elif dt >= 1.1 and dt < 2.5 and f_t15 is None:
+                f_t15 = f
+
+        out = []
+        out.append(f_t3 if f_t3 is not None else (buf[0][1] if buf else current_frame))
+        out.append(f_t15 if f_t15 is not None else (buf[-1][1] if len(buf) >= 2 else current_frame))
+        out.append(current_frame)
+        return out
 
     def _inference_loop(self):
         """Runs mode-aware disease prediction in background with strict subject gating."""
@@ -401,6 +563,7 @@ class PoultryVideoCamera:
                 mode_changed = self._mode_changed
                 if mode_changed:
                     self._mode_changed = False
+                    self._verifier_engine.clear_verification()
 
             if not enabled:
                 time.sleep(0.10)
@@ -422,6 +585,10 @@ class PoultryVideoCamera:
             try:
                 pred_result = self._predictor.predict(raw, mode=mode)
                 if not pred_result.has_subject or pred_result.primary is None:
+                    self._no_subject_count += 1
+                    if self._no_subject_count >= 15:
+                        self._verifier_engine.clear_verification()
+                        self._last_yolo_label = None
                     # Gating active: No poultry subject focused, clear detection overlay
                     with self._lock:
                         self._last_det = None
@@ -431,10 +598,79 @@ class PoultryVideoCamera:
                         res["has_subject"] = False
                         self._latest_result = res
                     continue
+                else:
+                    self._no_subject_count = 0
 
                 smoothed_det = self._smoother.push(pred_result.primary)
                 pred_result.primary = smoothed_det
                 result_dict = pred_result.to_dict()
+
+                # ── STAGE-2 GEMINI MULTIMODAL VERIFICATION (NON-BLOCKING ASYNC) ──
+                primary = pred_result.primary
+                p_label = primary.label
+                p_conf  = primary.confidence
+                p_box   = primary.box
+
+                if mode != "fecal" and self._verifier_engine.should_trigger(p_label, p_conf, mode):
+                    roi = _crop_with_padding(raw, p_box, pad_pct=0.15)
+                    if mode == "head":
+                        self._verifier_engine.submit_task(
+                            mode="head", full_frame=raw, roi_crop=roi,
+                            yolo_label=p_label, yolo_conf=p_conf
+                        )
+                    elif mode == "triage":
+                        t_frames = self._get_3_temporal_frames(raw)
+                        self._verifier_engine.submit_task(
+                            mode="triage", full_frame=raw, roi_crop=roi,
+                            yolo_label=p_label, yolo_conf=p_conf,
+                            temporal_frames=t_frames
+                        )
+                    else:  # ensemble
+                        extra_crops = [_crop_with_padding(raw, d.box, pad_pct=0.10) for d in pred_result.all_detections[:3]]
+                        summary = {
+                            "primary_model": primary.source_model,
+                            "primary_label": p_label,
+                            "confidence": round(p_conf, 3),
+                            "all_detections": [{"model": d.source_model, "label": d.label, "confidence": round(d.confidence, 3)} for d in pred_result.all_detections]
+                        }
+                        self._verifier_engine.submit_task(
+                            mode="ensemble", full_frame=raw, roi_crop=roi,
+                            yolo_label=p_label, yolo_conf=p_conf,
+                            consensus_data=summary, extra_crops=extra_crops
+                        )
+
+                # ── SYNCHRONIZE STAGE-2 GEMINI MULTIMODAL VERIFIED RESULT ──
+                self._last_yolo_label = p_label
+                gemini_ver = self._verifier_engine.get_latest_verification(max_age_seconds=8.0) if mode != "fecal" else None
+                if gemini_ver and gemini_ver.get("mode") == mode and pred_result.primary:
+                    v_diag = gemini_ver.get("verified_diagnosis", p_label)
+                    clean_lbl = get_clean_display_label(v_diag, bool(gemini_ver.get("is_healthy", False)), mode)
+                    is_h = (clean_lbl in ("Healthy", "Normal"))
+                    v_conf = gemini_ver.get("diagnostic_confidence", int(p_conf * 100)) / 100.0
+
+                    # Sync primary detection object for video overlay
+                    pred_result.primary.label = clean_lbl
+                    pred_result.primary.confidence = v_conf
+
+                    # Sync result dictionary for web status API
+                    result_dict["gemini_verifier"] = gemini_ver
+                    if result_dict.get("primary"):
+                        result_dict["primary"]["label"] = clean_lbl
+                        result_dict["primary"]["confidence"] = v_conf
+                        is_crit = clean_lbl in ("Salmonellosis", "Coccidiosis", "Newcastle Disease")
+                        result_dict["primary"]["severity"] = "Normal" if is_h else ("Critical" if is_crit else "High")
+                        result_dict["primary"]["sev_key"] = "low" if is_h else ("crit" if is_crit else "high")
+                        result_dict["primary"]["color"] = "#00e5a0" if is_h else ("#ec4899" if clean_lbl in ("Abnormal", "Unhealthy") else "#ef4444")
+                        result_dict["primary"]["hint"] = gemini_ver.get("symptom_guide_summary", "")
+                        result_dict["primary"]["gemini_verified"] = True
+                        result_dict["primary"]["status_badge"] = ("NORMAL" if mode == "triage" else "HEALTHY") if is_h else ("ABNORMAL" if (mode == "triage" or clean_lbl in ("Abnormal", "Unhealthy")) else "VERIFIED ALERT")
+                        if gemini_ver.get("differential_diagnosis"):
+                            result_dict["primary"]["differential_diagnosis"] = gemini_ver.get("differential_diagnosis")
+                else:
+                    result_dict["gemini_verifier"] = None
+                    if not pred_result.has_subject:
+                        self._verifier_engine.clear_verification()
+
             except Exception as exc:
                 print(f"[infer] {exc}")
                 continue
@@ -519,21 +755,21 @@ class PoultryVideoCamera:
 
         # Animated dots based on wall clock
         dots = "." * (int(time.time() * 2) % 4)
-        status_line = f"Searching for USB Camera{dots}"
+        status_line = f"Searching for Camera{dots}"
         (sw, _), _ = cv2.getTextSize(status_line, cv2.FONT_HERSHEY_SIMPLEX, 0.75, 2)
         cv2.putText(img, status_line, ((FRAME_W - sw) // 2, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2, cv2.LINE_AA)
 
         # Explanatory lines
-        sub1 = "Auto-reconnect engine active (/dev/video*)"
-        (s1w, _), _ = cv2.getTextSize(sub1, cv2.FONT_HERSHEY_SIMPLEX, 0.50, 1)
-        cv2.putText(img, sub1, ((FRAME_W - s1w) // 2, 248), cv2.FONT_HERSHEY_SIMPLEX, 0.50, color_emerald, 1, cv2.LINE_AA)
+        sub1 = "Auto-reconnect engine active (USB Webcam & Pi CSI Camera)"
+        (s1w, _), _ = cv2.getTextSize(sub1, cv2.FONT_HERSHEY_SIMPLEX, 0.48, 1)
+        cv2.putText(img, sub1, ((FRAME_W - s1w) // 2, 248), cv2.FONT_HERSHEY_SIMPLEX, 0.48, color_emerald, 1, cv2.LINE_AA)
 
-        sub2 = "Plug in or reposition USB webcam -- stream starts automatically"
+        sub2 = "Plug in USB webcam or connect Pi Camera -- stream starts automatically"
         (s2w, _), _ = cv2.getTextSize(sub2, cv2.FONT_HERSHEY_SIMPLEX, 0.44, 1)
         cv2.putText(img, sub2, ((FRAME_W - s2w) // 2, 280), cv2.FONT_HERSHEY_SIMPLEX, 0.44, (180, 190, 205), 1, cv2.LINE_AA)
 
         # Scanning device indicator
-        dev_info = "Probing video indices 0-15 | V4L2 Hardware Watchdog Active"
+        dev_info = "Probing valid video devices | Broadcom ISP / Codec Filtered"
         (dw, _), _ = cv2.getTextSize(dev_info, cv2.FONT_HERSHEY_SIMPLEX, 0.40, 1)
         cv2.putText(img, dev_info, ((FRAME_W - dw) // 2, 335), cv2.FONT_HERSHEY_SIMPLEX, 0.40, color_cyan, 1, cv2.LINE_AA)
 
@@ -589,6 +825,8 @@ class PoultryVideoCamera:
             self._last_det     = None
             self._smoother     = _LabelSmoother()
             self._mode_changed = True
+        if self._verifier_engine:
+            self._verifier_engine.clear_verification()
         print(f"[camera] mode -> {mode}")
         return mode
 

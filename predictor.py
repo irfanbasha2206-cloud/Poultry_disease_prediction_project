@@ -82,6 +82,8 @@ NAMED_DISEASES   = GENERAL_DISEASES | FECAL_DISEASES
 
 LABEL_COLORS = {
     HEALTHY_LABEL:                ( 0, 215,  80),
+    "Normal":                     ( 0, 215,  80),
+    "Healthy (Resting)":          ( 0, 215,  80),
     "Coccidiosis":                ( 0, 140, 255),
     "Newcastle Disease":          (255,  60,  60),
     "Salmonellosis":              (255, 185,   0),
@@ -92,12 +94,15 @@ LABEL_COLORS = {
     "Weak Leg Syndrome":          (234, 179,   8),
     "Bumblefoot":                 (245, 158,  11),
     ABNORMAL_LABEL:               (200,   0, 200),
+    "Unhealthy":                  (200,   0, 200),
     UNIDENTIFIED_LABEL:           (220,  50,  50),
 }
 DEFAULT_COLOR = (255, 255, 255)
 
 LABEL_HEX = {
     HEALTHY_LABEL:                "#00e5a0",
+    "Normal":                     "#00e5a0",
+    "Healthy (Resting)":          "#00e5a0",
     "Coccidiosis":                "#3b82f6",
     "Newcastle Disease":          "#ff4757",
     "Salmonellosis":              "#f59e0b",
@@ -108,11 +113,14 @@ LABEL_HEX = {
     "Weak Leg Syndrome":          "#eab308",
     "Bumblefoot":                 "#f59e0b",
     ABNORMAL_LABEL:               "#ec4899",
+    "Unhealthy":                  "#ec4899",
     UNIDENTIFIED_LABEL:           "#dc2626",
 }
 
 SEVERITY_META = {
     HEALTHY_LABEL:                ("Normal",   "#00e5a0", "low"),
+    "Normal":                     ("Normal",   "#00e5a0", "low"),
+    "Healthy (Resting)":          ("Normal",   "#00e5a0", "low"),
     "Weak Leg Syndrome":          ("Moderate", "#eab308", "med"),
     "Favus":                      ("Moderate", "#a855f7", "med"),
     "Bumblefoot":                 ("Moderate", "#f59e0b", "med"),
@@ -235,6 +243,13 @@ POULTRY_KNOWLEDGE = {
         "etiology": "Tibial dyschondroplasia, perosis, or nutritional deficiency of Calcium, Phosphorus, Vitamin D3, or B-vitamins.",
         "symptoms": "Splayed legs, slipped Achilles tendon, inability to stand or access feed troughs.",
         "management": "Supplement flock with Vitamin D3, B-complex (Riboflavin), and balanced mineral premix. Reduce rapid-growth lighting schedule."
+    },
+    ABNORMAL_LABEL: {
+        "status": "Pathological - Clinical Abnormality Detected",
+        "etiology": "Avian pathology, physical distress, or unlisted disease outside standard 4-class cranial set.",
+        "transmission": "Depends on primary pathogen. Immediate physical triage and isolation recommended.",
+        "symptoms": "Visible lethargy, drooping head/wings, plumage ruffling, ocular irritation, comb pallor/cyanosis, or unlisted clinical lesions.",
+        "management": "Quarantine bird in warm observation pen. Inspect head, oral cavity, eyes, and cloaca. Consult an avian veterinarian."
     }
 }
 
@@ -290,6 +305,135 @@ def validate_poultry_presence(frame: np.ndarray, min_edge_density: float = 0.004
         return False
 
     return True
+
+
+_FACE_CASCADE = None
+_EYE_CASCADE  = None
+try:
+    if hasattr(cv2, "data") and hasattr(cv2.data, "haarcascades"):
+        _cascade_path = os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
+        if os.path.isfile(_cascade_path):
+            _FACE_CASCADE = cv2.CascadeClassifier(_cascade_path)
+        _eye_path = os.path.join(cv2.data.haarcascades, "haarcascade_eye.xml")
+        if os.path.isfile(_eye_path):
+            _EYE_CASCADE = cv2.CascadeClassifier(_eye_path)
+except Exception:
+    _FACE_CASCADE = None
+    _EYE_CASCADE  = None
+
+
+def detect_human_face_regions(frame: np.ndarray) -> list[tuple[int, int, int, int]]:
+    """
+    Returns list of bounding boxes (x, y, w, h) of human faces and human eyes in the frame.
+    Runs on downscaled grayscale thumbnail (<5ms).
+    """
+    if frame is None or frame.size == 0:
+        return []
+    h, w = frame.shape[:2]
+    scale = 320.0 / max(h, w)
+    small = cv2.resize(frame, (int(w * scale), int(h * scale)))
+    gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
+    real_regions = []
+    total_area = float(w * h)
+
+    if _FACE_CASCADE is not None and not _FACE_CASCADE.empty():
+        faces = _FACE_CASCADE.detectMultiScale(gray, scaleFactor=1.15, minNeighbors=4, minSize=(28, 28))
+        for (fx, fy, fw, fh) in faces:
+            bx, by, bw, bh = int(fx / scale), int(fy / scale), int(fw / scale), int(fh / scale)
+            if (bw * bh) / total_area >= 0.02:
+                real_regions.append((bx, by, bw, bh))
+
+    if _EYE_CASCADE is not None and not _EYE_CASCADE.empty():
+        eyes = _EYE_CASCADE.detectMultiScale(gray, scaleFactor=1.15, minNeighbors=4, minSize=(16, 16))
+        for (ex, ey, ew, eh) in eyes:
+            bx, by, bw, bh = int(ex / scale), int(ey / scale), int(ew / scale), int(eh / scale)
+            pad = int(bw * 0.25)
+            ebx, eby = max(0, bx - pad), max(0, by - pad)
+            ebw, ebh = min(w - ebx, bw + 2 * pad), min(h - eby, bh + 2 * pad)
+            real_regions.append((ebx, eby, ebw, ebh))
+
+    return real_regions
+
+
+def is_box_overlapping_face(box: tuple, face_boxes: list[tuple[int, int, int, int]]) -> bool:
+    """
+    Returns True if detection box (x1, y1, x2, y2) overlaps significantly with any detected human face.
+    """
+    if not face_boxes:
+        return False
+    bx1, by1, bx2, by2 = box
+    bcx, bcy = (bx1 + bx2) / 2.0, (by1 + by2) / 2.0
+    for (fx, fy, fw, fh) in face_boxes:
+        fx2, fy2 = fx + fw, fy + fh
+        if fx <= bcx <= fx2 and fy <= bcy <= fy2:
+            return True
+        ix1, iy1 = max(bx1, fx), max(by1, fy)
+        ix2, iy2 = min(bx2, fx2), min(by2, fy2)
+        if ix2 > ix1 and iy2 > iy1:
+            inter_area = (ix2 - ix1) * (iy2 - iy1)
+            box_area = max(1.0, (bx2 - bx1) * (by2 - by1))
+            if (inter_area / box_area) > 0.30:
+                return True
+    return False
+
+
+def check_avian_comb_tissue(frame: np.ndarray) -> bool:
+    """
+    Checks if genuine cohesive scarlet-red avian comb/wattle tissue exists in frame.
+    Requires vibrant crimson hue and cohesive contour area >= 500 px.
+    """
+    if frame is None or frame.size == 0:
+        return False
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    comb_mask = ((hsv[:, :, 0] <= 10) | (hsv[:, :, 0] >= 170)) & (hsv[:, :, 1] >= 120) & (hsv[:, :, 2] >= 90)
+    b, g, r = cv2.split(frame.astype(float))
+    comb_red = (comb_mask & (r > 135) & (r > 1.4 * g) & (r > 1.4 * b)).astype(np.uint8)
+    contours, _ = cv2.findContours(comb_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return any(cv2.contourArea(c) >= 500 for c in contours)
+
+
+def detect_human_hand_presence(frame: np.ndarray) -> tuple[bool, float]:
+    """
+    Detects if frame is dominated by human hands, palms, or arms.
+    """
+    if frame is None or frame.size == 0:
+        return False, 0.0
+    h, w = frame.shape[:2]
+    total_px = float(w * h)
+
+    ycrcb = cv2.cvtColor(frame, cv2.COLOR_BGR2YCrCb)
+    skin_ycrcb = (ycrcb[:, :, 1] >= 133) & (ycrcb[:, :, 1] <= 173) & (ycrcb[:, :, 2] >= 77) & (ycrcb[:, :, 2] <= 127)
+    
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    skin_hsv = (hsv[:, :, 0] >= 0) & (hsv[:, :, 0] <= 25) & (hsv[:, :, 1] >= 35) & (hsv[:, :, 1] <= 165) & (hsv[:, :, 2] >= 50)
+    skin_mask = (skin_ycrcb & skin_hsv).astype(np.uint8)
+
+    has_real_comb = check_avian_comb_tissue(frame)
+    skin_ratio = float(np.count_nonzero(skin_mask)) / total_px
+    is_hand = (skin_ratio >= 0.28 and not has_real_comb)
+    return is_hand, skin_ratio
+
+
+def is_box_human_skin(crop: np.ndarray) -> bool:
+    """
+    Checks if a bounding box crop is predominantly human skin without comb or feather texture.
+    """
+    if crop is None or crop.size == 0 or crop.shape[0] < 10 or crop.shape[1] < 10:
+        return False
+    ycrcb = cv2.cvtColor(crop, cv2.COLOR_BGR2YCrCb)
+    skin_ycrcb = (ycrcb[:, :, 1] >= 133) & (ycrcb[:, :, 1] <= 173) & (ycrcb[:, :, 2] >= 77) & (ycrcb[:, :, 2] <= 127)
+    hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+    skin_hsv = (hsv[:, :, 0] >= 0) & (hsv[:, :, 0] <= 25) & (hsv[:, :, 1] >= 35) & (hsv[:, :, 1] <= 165) & (hsv[:, :, 2] >= 50)
+    skin_mask = skin_ycrcb & skin_hsv
+    
+    comb_mask = ((hsv[:, :, 0] <= 10) | (hsv[:, :, 0] >= 170)) & (hsv[:, :, 1] >= 120) & (hsv[:, :, 2] >= 90)
+    b, g, r = cv2.split(crop.astype(float))
+    comb_red = comb_mask & (r > 135) & (r > 1.4 * g) & (r > 1.4 * b)
+    if np.count_nonzero(comb_red) >= 250:
+        return False
+
+    skin_ratio = float(np.count_nonzero(skin_mask)) / float(crop.shape[0] * crop.shape[1])
+    return skin_ratio >= 0.38
 
 
 def is_valid_box(box: tuple, frame_shape: tuple, max_area_ratio: float = 0.84, min_area_ratio: float = 0.012) -> bool:
@@ -883,6 +1027,52 @@ class PoultryPredictor:
         organic_ratio = (dark_px + white_px + blood_px + green_px) / tot
         return organic_ratio >= 0.08
 
+    @staticmethod
+    def is_fecal_normal_urate_cap(crop: np.ndarray) -> bool:
+        """
+        Improved heuristic that distinguishes healthy physiological white uric acid caps
+        on formed droppings from true Salmonellosis / Pullorum (Bacillary White Diarrhea)
+        and Newcastle Disease green diarrhea.
+
+        Key distinctions:
+        - Healthy urate cap:     moderate formed core (0.10-0.72) + white cap (>=5%) + NO green bile + NO blood
+        - Newcastle green bile:  formed ratio very high (>0.75 includes dark litter) + green ratio >=3%
+        - Salmonella diarrhea:   white ratio very high (>0.55) AND formed ratio very low (<0.15) = liquid puddle
+        """
+        if crop is None or crop.size == 0 or crop.shape[0] < 12 or crop.shape[1] < 12:
+            return False
+        gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+        tot = float(crop.shape[0] * crop.shape[1])
+
+        dark_px = np.count_nonzero(gray < 95)
+        b, g, r = cv2.split(crop.astype(float))
+        brown_mask = (r > b + 8) & (g > b) & (gray >= 55) & (gray <= 170)
+        brown_px = np.count_nonzero(brown_mask)
+        white_px = np.count_nonzero((gray > 170) & (np.abs(r - b) < 35) & (np.abs(g - b) < 35))
+        blood_px = np.count_nonzero((r > 130) & (r > 1.35 * g) & (r > 1.35 * b))
+        green_px = np.count_nonzero((g > 100) & (g > 1.20 * r) & (g > 1.20 * b))
+
+        formed_ratio = (dark_px + brown_px) / tot
+        white_ratio  = white_px / tot
+        blood_ratio  = blood_px / tot
+        green_ratio  = green_px / tot
+
+        # Salmonella liquid white diarrhea: very high white, very low formed structure
+        is_liquid_white_diarrhea = (white_ratio >= 0.55 and formed_ratio < 0.15)
+
+        # Newcastle / litter environment: extremely high dark/formed (>0.75)
+        # This covers dark litter + bird environment background
+        is_dark_litter_or_newcastle = (formed_ratio >= 0.75)
+
+        # Healthy urate cap: solid formed body (formed_ratio >= 0.20) + localized white cap (0.04 <= white_ratio <= 0.25) + no blood + minimal green
+        # If white_ratio > 0.25, it is extensive white pasty/liquid discharge (Salmonellosis), NOT a healthy urate cap!
+        return bool(
+            0.20 <= formed_ratio <= 0.75 and
+            0.04 <= white_ratio <= 0.25 and
+            blood_ratio < 0.04 and
+            green_ratio < 0.03
+        )
+
     def predict(self, frame, mode="ensemble", find_screen=False):
         t0 = time.perf_counter()
         result = PredictionResult(mode=mode)
@@ -898,94 +1088,277 @@ class PoultryPredictor:
         # 1. Subject presence check: Prevent false disease prediction on empty walls/screens
         if not validate_poultry_presence(frame):
             result.has_subject = False
+            result.override_reason = "No subject detected in camera focus."
             result.inference_ms = (time.perf_counter() - t0) * 1000
             return result
 
-        # 2. Check for Avian Cranial Flesh (Comb & Wattles)
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        m1 = cv2.inRange(hsv, (0, 105, 90), (14, 255, 255))
-        m2 = cv2.inRange(hsv, (168, 105, 90), (180, 255, 255))
-        comb_px = int(np.count_nonzero(m1 | m2))
-        b, g, r = cv2.split(frame.astype(float))
-        red_flesh_px = int(np.count_nonzero((r > 125) & (r > 1.35 * g) & (r > 1.35 * b)))
-        has_comb = (comb_px >= 240 and red_flesh_px >= 200)
+        # 2. Human Face & Hand presence gating (prevents predicting on human faces or hands)
+        face_boxes = detect_human_face_regions(frame)
+        is_hand, _ = detect_human_hand_presence(frame)
 
-        # 3. Probe General Head Model
-        g_dets = self._run("general.pt", frame, conf_thresh=max(0.28, self.conf_threshold))
-        has_head = (len(g_dets) > 0) or has_comb
+        # 3. Mode-targeted inference for maximum FPS and low latency
+        g_raw = []
+        f_raw = []
+        app_raw = []
+        beh_raw = []
 
-        # 4. Probe Fecal Dropping Model
-        f_dets = self._run("fecal.pt", frame, conf_thresh=max(0.42, self.conf_threshold))
-        valid_f_dets = []
-        for d in f_dets:
+        if mode == "head":
+            g_raw = self._run("general.pt", frame, conf_thresh=0.45)
+            # Fused triage models (appearance.pt & behavior.pt) to detect abnormalities & unknown diseases
+            app_raw = self._run("appearance.pt", frame, conf_thresh=0.50)
+            beh_raw = self._run("behavior.pt", frame, conf_thresh=0.52)
+        elif mode == "fecal":
+            f_raw = self._run("fecal.pt", frame, conf_thresh=0.45)
+        elif mode == "triage":
+            app_raw = self._run("appearance.pt", frame, conf_thresh=0.50)
+            beh_raw = self._run("behavior.pt", frame, conf_thresh=0.52)
+        else: # ensemble
+            g_raw = self._run("general.pt", frame, conf_thresh=0.45)
+            f_raw = self._run("fecal.pt", frame, conf_thresh=0.45)
+            app_raw = self._run("appearance.pt", frame, conf_thresh=0.50)
+            beh_raw = self._run("behavior.pt", frame, conf_thresh=0.52)
+
+        # 4. Filter General Head boxes (reject face overlaps, human skin, non-avian objects)
+        g_dets = []
+        for d in g_raw:
+            if d.confidence < 0.45:
+                continue
+            if is_box_overlapping_face(d.box, face_boxes):
+                continue
             x1, y1, x2, y2 = [int(v) for v in d.box]
             bw, bh = max(0, x2 - x1), max(0, y2 - y1)
             area_ratio = (bw * bh) / float(w * h)
-            if 0.015 <= area_ratio <= 0.65:
+            if bw < 16 or bh < 16 or bw > 0.88 * w or bh > 0.88 * h:
+                continue
+            if bw > 0.90 * w and bh < 0.40 * h:
+                continue
+            crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
+            if is_box_human_skin(crop):
+                continue
+
+            hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+            b, g, r = cv2.split(crop.astype(float))
+            comb_mask = ((hsv[:, :, 0] <= 12) | (hsv[:, :, 0] >= 168)) & (hsv[:, :, 1] >= 80) & (hsv[:, :, 2] >= 70)
+            comb_red = comb_mask & (r > 110) & (r > 1.25 * g) & (r > 1.25 * b)
+            red_count = np.count_nonzero(comb_red)
+            red_ratio = float(red_count) / float(max(1, bw * bh))
+
+            if d.label in ("Healthy", "normal", "Normal"):
+                if red_count < 80 and red_ratio < 0.012:
+                    continue
+
+            gray_crop = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+            if float(np.std(gray_crop)) < 16.0:
+                continue
+
+            g_dets.append(d)
+
+        # 5. Filter Fecal boxes (reject face overlaps, human skin)
+        valid_f_dets = []
+        for d in f_raw:
+            if d.confidence < 0.45:
+                continue
+            if is_box_overlapping_face(d.box, face_boxes):
+                continue
+            x1, y1, x2, y2 = [int(v) for v in d.box]
+            bw, bh = max(0, x2 - x1), max(0, y2 - y1)
+            area_ratio = (bw * bh) / float(w * h)
+            if 0.010 <= area_ratio <= 0.70:
                 crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
-                if self.is_fecal_texture_valid(crop):
-                    valid_f_dets.append(d)
+                if is_box_human_skin(crop):
+                    continue
+                valid_f_dets.append(d)
+
+        # 6. Filter Whole Bird (appearance & behavior)
+        has_comb = check_avian_comb_tissue(frame)
+        app_dets = []
+        for d in app_raw:
+            if is_box_overlapping_face(d.box, face_boxes):
+                continue
+            x1, y1, x2, y2 = [int(v) for v in d.box]
+            bw, bh = max(0, x2 - x1), max(0, y2 - y1)
+            if bw > 0.88 * w or bh > 0.88 * h or bw < 25 or bh < 25:
+                continue
+            crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
+            if crop.size == 0 or is_box_human_skin(crop):
+                continue
+            if float(np.std(cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY))) < 20.0:
+                continue
+            app_dets.append(d)
+
+        beh_dets = []
+        for d in beh_raw:
+            if is_box_overlapping_face(d.box, face_boxes):
+                continue
+            x1, y1, x2, y2 = [int(v) for v in d.box]
+            bw, bh = max(0, x2 - x1), max(0, y2 - y1)
+            if bw > 0.88 * w or bh > 0.88 * h or bw < 25 or bh < 25:
+                continue
+            crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
+            if crop.size == 0 or is_box_human_skin(crop):
+                continue
+            if float(np.std(cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY))) < 20.0:
+                continue
+            beh_dets.append(d)
+
+        # Classifier (best.pt) disease-name analysis & Necrotic Scab Detection:
+        # Activated whenever cranial / head anatomy is in focus and base general.pt is either empty or says Healthy
+        clf_det = None
+        has_named_disease = any(d.label in GENERAL_DISEASES for d in g_dets)
+        target_box = (0.0, 0.0, float(w), float(h))
+        clf_crop = frame
+
+        if g_dets:
+            best_g = max(g_dets, key=lambda d: d.confidence)
+            bx1, by1, bx2, by2 = [int(v) for v in best_g.box]
+            crop_cand = frame[max(0, by1):min(h, by2), max(0, bx1):min(w, bx2)]
+            if crop_cand.size > 0:
+                clf_crop = crop_cand
+                target_box = best_g.box
+
+        if (mode in ("head", "ensemble")) and not has_named_disease:
+            # 1. Try deep classification model (best.pt) on crop & frame
+            if self._clf_engine and self._clf_engine.available:
+                if has_comb or len(g_dets) > 0 or (len(app_dets) > 0 and any(d.label in ("AbNormal", "Abnormal") for d in app_dets)):
+                    clf_lbl, clf_conf = self._clf_engine.predict(clf_crop)
+                    if clf_lbl and clf_conf >= 0.70 and clf_lbl != "Healthy":
+                        clf_det = Detection(label=clf_lbl, confidence=clf_conf, box=target_box, source_model="best.pt", raw_label=clf_lbl)
+                    elif (not clf_det or clf_lbl == "Healthy") and clf_crop is not frame:
+                        clf_lbl_f, clf_conf_f = self._clf_engine.predict(frame)
+                        if clf_lbl_f and clf_conf_f >= 0.70 and clf_lbl_f != "Healthy":
+                            clf_det = Detection(label=clf_lbl_f, confidence=clf_conf_f, box=target_box, source_model="best.pt", raw_label=clf_lbl_f)
+
+            # 2. Anatomical Necrotic Scab / Pox crust detection (hallmark of Cutaneous Fowl Pox)
+            # Detects black/dark necrotic scabs covering facial/cranial tissue when Healthy is erroneously predicted
+            if not clf_det and len(g_dets) > 0:
+                bx1, by1, bx2, by2 = [int(v) for v in target_box]
+                c_head = frame[max(0, by1):min(h, by2), max(0, bx1):min(w, bx2)]
+                if c_head.size > 0:
+                    gray_c = cv2.cvtColor(c_head, cv2.COLOR_BGR2GRAY)
+                    dark_px = int(np.count_nonzero(gray_c < 55))
+                    dark_ratio = float(dark_px) / float(max(1, c_head.shape[0] * c_head.shape[1]))
+                    # If over 8% of the head has dark necrotic lesions/crusts, it is Fowl Pox!
+                    if dark_ratio >= 0.08 and dark_px >= 400:
+                        clf_det = Detection(label="Fowl Pox", confidence=0.92, box=target_box, source_model="clinical_agent (necrotic scabs)", raw_label="Fowl Pox")
+
+        has_head = len(g_dets) > 0 or clf_det is not None
         has_fecal = len(valid_f_dets) > 0
+        has_bird_body = (len(app_dets) > 0 or len(beh_dets) > 0)
 
-        # 5. Probe Whole Bird Body (behavior / appearance)
-        app_dets = self._run("appearance.pt", frame, conf_thresh=max(0.40, self.conf_threshold))
-        beh_dets = self._run("behavior.pt", frame, conf_thresh=max(0.40, self.conf_threshold))
-        
-        clf = getattr(self, "_clf_engine", None)
-        clf_conf = 0.0
-        if clf is not None and clf.available:
-            _, clf_conf = clf.predict(frame)
+        # 7. Reject if human face or hand detected and no chicken/fecal detection exists
+        if face_boxes and not (has_head or has_fecal or has_bird_body):
+            result.has_subject = False
+            result.primary = None
+            result.secondary = None
+            result.all_detections = []
+            result.override_reason = "Human face detected in camera focus. Point lens at chicken or droppings."
+            result.inference_ms = (time.perf_counter() - t0) * 1000
+            return result
 
-        has_bird_body = (len(app_dets) > 0 or len(beh_dets) > 0) and (clf_conf >= 0.60 or has_comb or has_head)
+        if is_hand and not (has_head or has_fecal or has_bird_body):
+            result.has_subject = False
+            result.primary = None
+            result.secondary = None
+            result.all_detections = []
+            result.override_reason = "Human hand detected in camera focus. Point lens at chicken or droppings."
+            result.inference_ms = (time.perf_counter() - t0) * 1000
+            return result
 
         winner: Optional[Detection] = None
         all_dets: list[Detection] = []
         subject_type: Optional[str] = None
 
         if mode == "head":
-            if has_head:
+            all_dets = g_dets + app_dets + beh_dets
+            named = [d for d in g_dets if d.label in GENERAL_DISEASES and d.confidence >= 0.45]
+            healthy_g = [d for d in g_dets if d.label == HEALTHY_LABEL and d.confidence >= 0.48]
+
+            abnormal_dets = [d for d in (app_dets + beh_dets) if d.label in ("AbNormal", "Abnormal", ABNORMAL_LABEL) and d.confidence >= 0.55]
+
+            best_named = max(named, key=lambda d: d.confidence) if named else None
+            best_abn   = max(abnormal_dets, key=lambda d: d.confidence) if abnormal_dets else None
+            best_hlt   = max(healthy_g, key=lambda d: d.confidence) if healthy_g else None
+
+            if clf_det is not None:
                 subject_type = "POULTRY_CHICKEN"
-                named = [d for d in g_dets if d.label in GENERAL_DISEASES]
-                healthy = [d for d in g_dets if d.label == HEALTHY_LABEL]
-                winner = max(named, key=lambda d: d.confidence) if named else (max(healthy, key=lambda d: d.confidence) if healthy else None)
-                if winner is None and has_comb:
-                    winner = Detection(HEALTHY_LABEL, 0.78, (0.0, 0.0, float(w), float(h)), "general.pt", "normal")
-                all_dets = g_dets
+                winner = clf_det
+            elif best_named:
+                subject_type = "POULTRY_CHICKEN"
+                winner = best_named
+            elif best_abn and (has_head or has_comb):
+                # Unknown/unlisted disease or clinical abnormality detected on poultry subject
+                subject_type = "POULTRY_CHICKEN"
+                target_box = best_hlt.box if best_hlt else best_abn.box
+                winner = Detection(ABNORMAL_LABEL, best_abn.confidence, target_box, best_abn.source_model, "Abnormal")
+            elif best_hlt:
+                subject_type = "POULTRY_CHICKEN"
+                winner = Detection(HEALTHY_LABEL, best_hlt.confidence, best_hlt.box, best_hlt.source_model, "Healthy")
+            else:
+                winner = None
         elif mode == "fecal":
-            if has_fecal:
+            if valid_f_dets:
                 subject_type = "POULTRY_FECAL"
-                named = [d for d in valid_f_dets if d.label in FECAL_DISEASES]
-                healthy = [d for d in valid_f_dets if d.label == HEALTHY_LABEL]
-                winner = max(named, key=lambda d: d.confidence) if named else (max(healthy, key=lambda d: d.confidence) if healthy else None)
+                named = [d for d in valid_f_dets if d.label in FECAL_DISEASES and d.confidence >= 0.45]
+                healthy = [d for d in valid_f_dets if d.label == HEALTHY_LABEL and d.confidence >= 0.45]
+                if named:
+                    winner = max(named, key=lambda d: d.confidence)
+                elif healthy:
+                    winner = max(healthy, key=lambda d: d.confidence)
+                else:
+                    winner = None
                 all_dets = valid_f_dets
+            else:
+                winner = None
         elif mode == "triage":
             if has_bird_body:
                 subject_type = "POULTRY_CHICKEN"
                 all_t = app_dets + beh_dets
-                abn = [d for d in all_t if d.label == ABNORMAL_LABEL]
-                hlt = [d for d in all_t if d.label == HEALTHY_LABEL]
-                winner = max(abn, key=lambda d: d.confidence) if abn else (max(hlt, key=lambda d: d.confidence) if hlt else None)
+                abn = [d for d in all_t if d.label in ("AbNormal", "Abnormal") and d.confidence >= 0.55]
+                hlt = [d for d in all_t if d.label in ("Normal", "Healthy") and d.confidence >= 0.65]
+                if abn and hlt:
+                    best_abn = max(abn, key=lambda d: d.confidence)
+                    best_hlt = max(hlt, key=lambda d: d.confidence)
+                    winner = best_abn if (best_abn.confidence >= 0.70 and best_abn.confidence >= best_hlt.confidence) else best_hlt
+                elif abn:
+                    winner = max(abn, key=lambda d: d.confidence)
+                elif hlt:
+                    winner = max(hlt, key=lambda d: d.confidence)
+                else:
+                    winner = None
                 all_dets = all_t
+            else:
+                winner = None
         else: # ensemble
-            if has_fecal and not has_head:
+            if clf_det is not None:
+                subject_type = "POULTRY_CHICKEN"
+                winner = clf_det
+                all_dets = [clf_det] + app_dets + beh_dets
+            elif has_fecal and not g_dets:
                 subject_type = "POULTRY_FECAL"
-                named = [d for d in valid_f_dets if d.label in FECAL_DISEASES]
-                healthy = [d for d in valid_f_dets if d.label == HEALTHY_LABEL]
+                named = [d for d in valid_f_dets if d.label in FECAL_DISEASES and d.confidence >= 0.45]
+                healthy = [d for d in valid_f_dets if d.label == HEALTHY_LABEL and d.confidence >= 0.45]
                 winner = max(named, key=lambda d: d.confidence) if named else (max(healthy, key=lambda d: d.confidence) if healthy else None)
                 all_dets = valid_f_dets
-            elif has_head or has_bird_body:
+            elif g_dets:
                 subject_type = "POULTRY_CHICKEN"
-                named = [d for d in g_dets if d.label in GENERAL_DISEASES]
-                healthy = [d for d in g_dets if d.label == HEALTHY_LABEL]
+                named = [d for d in g_dets if d.label in GENERAL_DISEASES and d.confidence >= 0.45]
+                healthy = [d for d in g_dets if d.label == HEALTHY_LABEL and d.confidence >= 0.50]
                 winner = max(named, key=lambda d: d.confidence) if named else (max(healthy, key=lambda d: d.confidence) if healthy else None)
-                if winner is None and has_comb:
-                    winner = Detection(HEALTHY_LABEL, 0.78, (0.0, 0.0, float(w), float(h)), "general.pt", "normal")
-                elif winner is None and has_bird_body:
-                    all_t = app_dets + beh_dets
-                    abn = [d for d in all_t if d.label == ABNORMAL_LABEL]
-                    hlt = [d for d in all_t if d.label == HEALTHY_LABEL]
-                    winner = max(abn, key=lambda d: d.confidence) if abn else (max(hlt, key=lambda d: d.confidence) if hlt else None)
                 all_dets = g_dets + app_dets + beh_dets
+            elif has_bird_body:
+                subject_type = "POULTRY_CHICKEN"
+                all_t = app_dets + beh_dets
+                abn = [d for d in all_t if d.label in ("AbNormal", "Abnormal") and d.confidence >= 0.55]
+                hlt = [d for d in all_t if d.label in ("Normal", "Healthy") and d.confidence >= 0.70]
+                winner = max(abn, key=lambda d: d.confidence) if abn else (max(hlt, key=lambda d: d.confidence) if hlt else None)
+                all_dets = app_dets + beh_dets
+            else:
+                winner = None
+                all_t = app_dets + beh_dets
+                abn = [d for d in all_t if d.label in ("AbNormal", "Abnormal") and d.confidence >= 0.50]
+                hlt = [d for d in all_t if d.label in ("Normal", "Healthy") and d.confidence >= 0.70]
+                winner = max(abn, key=lambda d: d.confidence) if abn else (max(hlt, key=lambda d: d.confidence) if hlt else None)
+                all_dets = app_dets + beh_dets
 
         if winner is None:
             result.has_subject = False
@@ -1009,33 +1382,99 @@ class PoultryPredictor:
         """
         Validates whether the uploaded image contains genuine poultry (chicken head, body,
         plumage, or fecal droppings). Prevents false predictions on cars, furniture,
-        landscapes, non-avian pets, or random objects.
+        doors, human faces, hands, non-avian pets, or random objects.
         """
-        d_gen = []
-        for c in crops:
-            d_gen.extend(self._run("general.pt", c, conf_thresh=0.18))
-        d_beh = []
-        for c in crops:
-            d_beh.extend(self._run("behavior.pt", c, conf_thresh=0.18))
-        d_app = self._run("appearance.pt", frame, conf_thresh=0.28)
-        d_fec = self._run("fecal.pt", frame, conf_thresh=0.22)
+        if frame is None or frame.size == 0:
+            return False, "Empty or invalid image."
 
-        if len(d_gen) > 0 or len(d_beh) > 0 or len(d_app) > 0 or len(d_fec) > 0:
-            return True, "Poultry anatomical subject confirmed by multi-spectral detection."
+        h, w = frame.shape[:2]
 
-        # Cranial Comb / Wattles anatomical flesh check (HSV red range)
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        m1 = cv2.inRange(hsv, (0, 110, 100), (12, 255, 255))
-        m2 = cv2.inRange(hsv, (168, 110, 100), (180, 255, 255))
-        comb_px = int(np.count_nonzero(m1 | m2))
+        # 1. Human Face rejection
+        face_boxes = detect_human_face_regions(frame)
+        
+        # 2. Human Hand rejection
+        is_hand, _ = detect_human_hand_presence(frame)
 
-        b, g, r = cv2.split(frame.astype(float))
-        true_red_px = int(np.count_nonzero((r > 130) & (r > 1.5 * g) & (r > 1.5 * b)))
+        # 3. Multi-model subject probing with calibrated thresholds
+        g_raw = self._run("general.pt", frame, conf_thresh=0.48)
+        f_raw = self._run("fecal.pt", frame, conf_thresh=0.48)
+        app_raw = self._run("appearance.pt", frame, conf_thresh=0.55)
+        beh_raw = self._run("behavior.pt", frame, conf_thresh=0.55)
 
-        if comb_px >= 350 and true_red_px >= 300:
-            return True, "Avian cranial tissue (comb/wattles) detected."
+        # Filter candidate detections against human face, skin, flat surfaces, fecal texture
+        valid_poultry_dets = []
 
-        return False, "No poultry detected. Kindly upload a clear image of a chicken, poultry flock, or droppings to predict disease."
+        # 4. Filter General Head
+        for d in g_raw:
+            if is_box_overlapping_face(d.box, face_boxes):
+                continue
+            bx1, by1, bx2, by2 = [int(v) for v in d.box]
+            bw, bh = max(0, bx2 - bx1), max(0, by2 - by1)
+            area_ratio = (bw * bh) / float(w * h)
+            if bw < 20 or bh < 20 or area_ratio > 0.88:
+                continue
+            if bw > 0.90 * w and bh < 0.40 * h:
+                continue
+            crop = frame[max(0, by1):min(h, by2), max(0, bx1):min(w, bx2)]
+            if is_box_human_skin(crop):
+                continue
+            hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+            b, g, r = cv2.split(crop.astype(float))
+            comb_mask = ((hsv[:, :, 0] <= 12) | (hsv[:, :, 0] >= 168)) & (hsv[:, :, 1] >= 80) & (hsv[:, :, 2] >= 70)
+            comb_red = comb_mask & (r > 110) & (r > 1.25 * g) & (r > 1.25 * b)
+            red_count = np.count_nonzero(comb_red)
+            red_ratio = float(red_count) / float(max(1, bw * bh))
+            if d.label in ("Healthy", "normal", "Normal"):
+                if red_count < 100 and red_ratio < 0.015:
+                    continue
+            gray_crop = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+            if float(np.std(gray_crop)) < 18.0:
+                continue
+            valid_poultry_dets.append(d)
+
+        # 5. Filter Fecal
+        for d in f_raw:
+            if is_box_overlapping_face(d.box, face_boxes):
+                continue
+            bx1, by1, bx2, by2 = [int(v) for v in d.box]
+            bw, bh = max(0, bx2 - bx1), max(0, by2 - by1)
+            if (bw * bh) / float(w * h) <= 0.65:
+                crop = frame[max(0, by1):min(h, by2), max(0, bx1):min(w, bx2)]
+                if not is_box_human_skin(crop) and self.is_fecal_texture_valid(crop):
+                    valid_poultry_dets.append(d)
+
+        # 6. Filter Whole Bird
+        for d in app_raw + beh_raw:
+            if is_box_overlapping_face(d.box, face_boxes):
+                continue
+            bx1, by1, bx2, by2 = [int(v) for v in d.box]
+            bw, bh = max(0, bx2 - bx1), max(0, by2 - by1)
+            if (bw * bh) / float(w * h) > 0.85 or bw > 0.90 * w or bw < 30 or bh < 30:
+                continue
+            crop = frame[max(0, by1):min(h, by2), max(0, bx1):min(w, bx2)]
+            if crop.size == 0 or is_box_human_skin(crop):
+                continue
+            if float(np.std(cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY))) < 24.0:
+                continue
+            hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+            b, g, r = cv2.split(crop.astype(float))
+            comb_mask = ((hsv[:, :, 0] <= 12) | (hsv[:, :, 0] >= 168)) & (hsv[:, :, 1] >= 80) & (hsv[:, :, 2] >= 70)
+            comb_red = comb_mask & (r > 110) & (r > 1.25 * g) & (r > 1.25 * b)
+            red_count = np.count_nonzero(comb_red)
+            if red_count >= 80 or len(valid_poultry_dets) > 0 or len(app_raw + beh_raw) >= 4:
+                valid_poultry_dets.append(d)
+
+        # Reject if human face or hand detected and no valid poultry detections exist
+        if face_boxes and not valid_poultry_dets:
+            return False, "Human face detected. Kindly upload a clear image of a chicken, poultry flock, or droppings."
+
+        if is_hand and not valid_poultry_dets:
+            return False, "Human hand detected. Kindly upload a clear image of a chicken, poultry flock, or droppings."
+
+        if not valid_poultry_dets:
+            return False, "No poultry detected. Kindly upload a clear image of a chicken, poultry flock, or droppings to predict disease."
+
+        return True, "Poultry anatomical subject confirmed by multi-spectral detection."
 
     def predict_uploaded(self, frame, mode="head") -> PredictionResult:
         """
@@ -1103,16 +1542,35 @@ class PoultryPredictor:
             diseases = [d for d in fecal_dets if d.label in FECAL_DISEASES and d.confidence >= 0.35]
             healthies = [d for d in fecal_dets if d.label == HEALTHY_LABEL and d.confidence >= 0.35]
 
-            if diseases:
-                winner = max(diseases, key=lambda d: d.confidence)
+            if diseases and healthies:
+                best_dis = max(diseases, key=lambda d: d.confidence)
+                best_hlt = max(healthies, key=lambda d: d.confidence)
+                bx1, by1, bx2, by2 = [int(v) for v in best_dis.box]
+                f_crop = frame[max(0,by1):min(h,by2), max(0,bx1):min(w,bx2)]
+                if f_crop.size > 0 and self.is_fecal_normal_urate_cap(f_crop):
+                    winner = best_hlt if best_hlt.confidence >= 0.40 else Detection(HEALTHY_LABEL, max(0.82, best_dis.confidence), best_dis.box, "fecal.pt", "healthy")
+                else:
+                    winner = best_dis if best_dis.confidence >= best_hlt.confidence else best_hlt
+            elif diseases:
+                best_dis = max(diseases, key=lambda d: d.confidence)
+                bx1, by1, bx2, by2 = [int(v) for v in best_dis.box]
+                f_crop = frame[max(0,by1):min(h,by2), max(0,bx1):min(w,bx2)]
+                if f_crop.size > 0 and self.is_fecal_normal_urate_cap(f_crop):
+                    winner = Detection(HEALTHY_LABEL, max(0.82, best_dis.confidence), best_dis.box, "fecal.pt", "healthy")
+                else:
+                    winner = best_dis
+            elif healthies:
+                winner = max(healthies, key=lambda d: d.confidence)
+            else:
+                winner = None
+
+            if winner and winner.label in FECAL_DISEASES:
                 if winner.label == "Coccidiosis":
                     result.differential_diagnosis = ["Necrotic Enteritis", "Salmonellosis"]
                 elif winner.label == "Newcastle Disease":
                     result.differential_diagnosis = ["Avian Influenza", "Infectious Bronchitis"]
                 elif winner.label == "Salmonellosis":
                     result.differential_diagnosis = ["Pullorum Disease", "Colibacillosis"]
-            elif healthies:
-                winner = max(healthies, key=lambda d: d.confidence)
             else:
                 # Consult Keras classifier if loaded
                 clf = getattr(self, "_clf_engine", None)
@@ -1323,25 +1781,42 @@ class PoultryPredictor:
             return self._run_ensemble(image)
 
     def _run_head(self, image):
-        dets    = self._run("general.pt", image)
-        named   = [d for d in dets if d.label in GENERAL_DISEASES]
-        healthy = [d for d in dets if d.label == HEALTHY_LABEL]
-        # Always prefer disease over healthy, even at low confidence
-        if named:
-            primary = max(named, key=lambda d: d.confidence)
-            return primary, dets  # return whatever disease was found
-        if healthy:
-            return max(healthy, key=lambda d: d.confidence), dets
-        return None, dets
+        dets      = self._run("general.pt", image)
+        named     = [d for d in dets if d.label in GENERAL_DISEASES]
+        healthy_g = [d for d in dets if d.label == HEALTHY_LABEL]
+
+        app_dets  = self._run("appearance.pt", image, conf_thresh=0.45)
+        beh_dets  = self._run("behavior.pt", image, conf_thresh=0.48)
+        abnormal  = [d for d in (app_dets + beh_dets) if d.label in (ABNORMAL_LABEL, "AbNormal", "Abnormal") and d.confidence >= 0.45]
+        healthy_t = [d for d in (app_dets + beh_dets) if d.label in ("Normal", "Healthy")]
+        healthy_all = healthy_g + healthy_t
+
+        all_dets = dets + app_dets + beh_dets
+        best_named = max(named, key=lambda d: d.confidence) if named else None
+        best_abn   = max(abnormal, key=lambda d: d.confidence) if abnormal else None
+        best_hlt   = max(healthy_all, key=lambda d: d.confidence) if healthy_all else None
+
+        if best_named and best_named.confidence >= 0.55:
+            return best_named, all_dets
+
+        if best_abn and (not best_hlt or (best_abn.confidence >= 0.65 and best_abn.confidence >= best_hlt.confidence)):
+            target_box = best_named.box if best_named else (best_hlt.box if best_hlt else best_abn.box)
+            return Detection(ABNORMAL_LABEL, best_abn.confidence, target_box, best_abn.source_model, "Abnormal"), all_dets
+
+        if best_named:
+            return best_named, all_dets
+
+        if best_hlt:
+            return best_hlt, all_dets
+
+        return None, all_dets
 
     def _run_fecal(self, image):
-        dets    = self._run("fecal.pt", image)
+        dets    = self._run("fecal.pt", image, conf_thresh=0.45)
         named   = [d for d in dets if d.label in FECAL_DISEASES]
         healthy = [d for d in dets if d.label == HEALTHY_LABEL]
-        # Always prefer disease over healthy, even at low confidence
         if named:
-            primary = max(named, key=lambda d: d.confidence)
-            return primary, dets  # return whatever disease was found
+            return max(named, key=lambda d: d.confidence), dets
         if healthy:
             return max(healthy, key=lambda d: d.confidence), dets
         return None, dets

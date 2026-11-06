@@ -51,6 +51,16 @@ On macOS or Linux, activate the environment with:
 source venv/bin/activate
 ```
 
+### Environment Configuration (Optional - for Gemini AI & Email Alerts)
+
+Copy the example environment file and configure your API keys:
+
+```bash
+cp .env.example .env
+```
+
+Set your Google Gemini API key, Groq key, and Gmail SMTP credentials in `.env` if using automated biosecurity email alerts and multimodal stage-2 verification.
+
 ## Run the web application
 
 ```powershell

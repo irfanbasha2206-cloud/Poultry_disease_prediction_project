@@ -1771,6 +1771,16 @@
 
 
         <div class="tool-group">
+          <!-- Universal Live & Upload Email Alert Configuration -->
+          <div style="display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--b-gold); border-radius: 8px; padding: 4px 10px;">
+            <svg style="width: 15px; height: 15px; color: var(--gold-bright);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input type="email" id="live-alert-email" value="{{ default_email or '' }}" oninput="syncEmailInputs(this.value)" placeholder="Alert Recipient Email" style="background: transparent; border: none; color: #fff; font-size: 0.75rem; width: 175px; outline: none; font-family: inherit;" />
+            <label style="display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--emerald); cursor: pointer; user-select: none;">
+              <input type="checkbox" id="live-auto-email-cb" checked onchange="syncCheckbox(this.checked)" style="accent-color: var(--emerald);" />
+              <span>Email Alert</span>
+            </label>
+          </div>
+
           <button class="tool-btn" onclick="captureSnapshot()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             Capture Frame
@@ -1783,7 +1793,7 @@
 
           <button class="tool-btn active" id="audio-toggle-btn" onclick="toggleAudioAlert()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-            <span id="audio-btn-text">Audio Alert: ON</span>
+            <span id="audio-btn-text">Siren Alarm: ON</span>
           </button>
         </div>
       </div>
@@ -1920,6 +1930,21 @@
         <input type="file" id="image-file-input" accept="image/*" onchange="handleImageUpload(event)"/>
       </div>
 
+      <!-- Email Alert Configuration Bar -->
+      <div style="margin: 14px 0 16px; padding: 12px 16px; border-radius: 10px; background: rgba(15, 23, 42, 0.65); border: 1px solid var(--b-gold); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.8rem;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 6px; color: var(--gold-bright); font-weight: 700;">
+            <svg style="width: 17px; height: 17px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <span>Alert Email:</span>
+          </div>
+          <input type="email" id="alert-email-input" value="{{ default_email or '' }}" oninput="syncEmailInputs(this.value)" style="background: rgba(0,0,0,0.4); border: 1px solid var(--b1); border-radius: 6px; padding: 6px 12px; color: #ffffff; font-size: 0.8rem; width: 230px; outline: none;" placeholder="farmer@gmail.com" />
+        </div>
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--emerald); font-weight: 600;">
+          <input type="checkbox" id="auto-email-checkbox" checked onchange="syncCheckbox(this.checked)" style="width: 16px; height: 16px; accent-color: var(--emerald); cursor: pointer;" />
+          <span>Auto-Send Email Alert on Disease</span>
+        </label>
+      </div>
+
       <div class="upload-result" id="upload-result">
         <div style="font-weight:700;color:var(--t1);margin-bottom:6px" id="up-res-title">Diagnostic Analysis</div>
         <div style="color:var(--t2);line-height:1.5" id="up-res-body">Result summary</div>
@@ -1951,54 +1976,117 @@
     let isAudioAlertEnabled = true;
     let lastAlertDisease = null;
     let lastAlertTime = 0;
+    let lastLiveEmailDisease = "";
+    let lastLiveEmailTime = 0;
     const diagnosticLog = [];
 
-    // Synthesized Web Audio Chime (Clean medical alert tone, no external files needed)
+    // Synthesized Web Audio Chime (Clean medical alert tone, auto-unlocking on user gesture)
     let audioCtx = null;
+    function initAudioContext() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === "suspended") {
+          audioCtx.resume();
+        }
+      } catch (e) {
+        console.warn("AudioContext unlock failed:", e);
+      }
+    }
+
+    // Auto-unlock AudioContext on first page interaction
+    ["click", "touchstart", "keydown"].forEach(evt => {
+      document.addEventListener(evt, () => initAudioContext(), { once: true });
+    });
+
     function playAlertChime(severity) {
       if (!isAudioAlertEnabled) return;
       try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === "suspended") audioCtx.resume();
+        initAudioContext();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain);
         gain.connect(audioCtx.destination);
 
-        const now = audioCtx.currentTime;
-        if (severity === "crit") {
-          // Double warning tone for Critical
-          osc.frequency.setValueAtTime(880, now);
-          osc.frequency.setValueAtTime(740, now + 0.12);
-          gain.gain.setValueAtTime(0.2, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-          osc.start(now);
-          osc.stop(now + 0.35);
-        } else {
-          // Gentle chime for Elevated
-          osc.frequency.setValueAtTime(587.33, now); // D5
-          osc.frequency.setValueAtTime(880, now + 0.1);   // A5
-          gain.gain.setValueAtTime(0.12, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-          osc.start(now);
-          osc.stop(now + 0.3);
-        }
+        // Realistic High-Urgency Emergency Siren (Sawtooth wave with dual-frequency rapid sweep)
+        osc.type = "sawtooth";
+
+        // Siren frequency sweep: 680Hz -> 1180Hz -> 680Hz -> 1180Hz -> 680Hz
+        osc.frequency.setValueAtTime(680, now);
+        osc.frequency.linearRampToValueAtTime(1180, now + 0.22);
+        osc.frequency.linearRampToValueAtTime(680, now + 0.44);
+        osc.frequency.linearRampToValueAtTime(1180, now + 0.66);
+        osc.frequency.linearRampToValueAtTime(680, now + 0.88);
+        osc.frequency.linearRampToValueAtTime(500, now + 1.10);
+
+        // Volume envelope: piercing attack, sustained alarm, fast release
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.35, now + 0.05);
+        gain.gain.setValueAtTime(0.35, now + 0.88);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.15);
+
+        osc.start(now);
+        osc.stop(now + 1.15);
       } catch (e) {
-        console.warn("Audio chime error:", e);
+        console.warn("Audio siren error:", e);
       }
     }
 
+    function playSirenChirp() {
+      try {
+        initAudioContext();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sawtooth";
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.setValueAtTime(680, now);
+        osc.frequency.linearRampToValueAtTime(1180, now + 0.18);
+        osc.frequency.linearRampToValueAtTime(680, now + 0.35);
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.30, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc.start(now);
+        osc.stop(now + 0.38);
+      } catch (e) {}
+    }
+
     function toggleAudioAlert() {
+      initAudioContext();
       isAudioAlertEnabled = !isAudioAlertEnabled;
       const btn = document.getElementById("audio-toggle-btn");
       const txt = document.getElementById("audio-btn-text");
       if (isAudioAlertEnabled) {
         btn.classList.add("active");
-        txt.textContent = "Audio Alert: ON";
+        txt.textContent = "Siren Alarm: ON";
+        playSirenChirp(); // Immediate siren sound test so user hears the alarm is armed!
+        showToast("🚨 Emergency Siren Alarm ARMED", 3000);
       } else {
         btn.classList.remove("active");
-        txt.textContent = "Audio Alert: OFF";
+        txt.textContent = "Siren Alarm: OFF";
+        showToast("Siren Alarm Muted", 2000);
       }
+    }
+
+    // Synchronize Live Camera and Upload email settings
+    function syncEmailInputs(val) {
+      const el1 = document.getElementById("live-alert-email");
+      const el2 = document.getElementById("alert-email-input");
+      if (el1 && el1.value !== val) el1.value = val;
+      if (el2 && el2.value !== val) el2.value = val;
+    }
+
+    function syncCheckbox(checked) {
+      const cb1 = document.getElementById("live-auto-email-cb");
+      const cb2 = document.getElementById("auto-email-checkbox");
+      if (cb1 && cb1.checked !== checked) cb1.checked = checked;
+      if (cb2 && cb2.checked !== checked) cb2.checked = checked;
     }
 
     // ━━ MODE SWITCHER ━━
@@ -2218,73 +2306,191 @@
         }
       } else {
         // VALID DETECTION ACTIVE
-        const label = p.label;
-        const confPct = Math.round(p.confidence * 100);
-        const col = p.color || "var(--gold-bright)";
-        const sev = p.severity || "Moderate";
-        const sevKey = p.sev_key || "med";
+        const gv = (data.mode === "fecal") ? null : (data.gemini_verifier || (p && p.gemini_verified ? p : null));
+        const isGeminiVerified = Boolean(gv && gv.diagnostic_confidence);
+        // Determine true clinical health status:
+        // If Gemini verified, Gemini takes absolute precedence.
+        // If not Gemini verified, strictly follow YOLO's raw label.
+        let isHealthy = false;
+        let displayLabel = rawLabel;
+
+        if (isGeminiVerified) {
+          const vDiag = (gv.verified_diagnosis || rawLabel).trim();
+          const vLower = vDiag.toLowerCase();
+          const isNamed = vLower.includes("salmonell") || vLower.includes("newcastle") ||
+                          vLower.includes("coccidi") || vLower.includes("pox") ||
+                          vLower.includes("coryza") || vLower.includes("crd") ||
+                          vLower.includes("favus") || vLower.includes("bumblefoot") ||
+                          vLower.includes("weak leg");
+          const isAbn = vLower === "abnormal" || vLower === "unhealthy";
+
+          if (isNamed) {
+            isHealthy = false;
+            displayLabel = vDiag;
+          } else if (isAbn) {
+            isHealthy = false;
+            displayLabel = "Abnormal";
+          } else if (gv.is_healthy || vLower === "healthy" || vLower === "normal") {
+            isHealthy = true;
+            displayLabel = (data.mode === "triage" || vDiag === "Normal") ? "Normal" : "Healthy";
+          } else {
+            isHealthy = false;
+            displayLabel = vDiag;
+          }
+        } else {
+          isHealthy = isRawHealthy && !isRawAbnormal;
+          displayLabel = rawLabel;
+        }
+
+        const isFpFiltered = Boolean(gv && gv.yolo_false_positive_filtered && isHealthy);
+
+        const confPct = (isGeminiVerified && gv.diagnostic_confidence !== undefined)
+          ? gv.diagnostic_confidence
+          : Math.round(p.confidence * 100);
+
+        const col = isHealthy ? "var(--emerald)" : (p.color || "var(--crimson)");
+        const sev = (isGeminiVerified && gv.status_badge)
+          ? gv.status_badge
+          : (isHealthy ? (data.mode === "triage" ? "NORMAL" : "HEALTHY") : (p.severity || "Moderate"));
+        const sevKey = isHealthy ? "low" : (p.sev_key || "high");
 
         pCard.style.setProperty("--det-border", col);
         pCard.style.setProperty("--det-glow", col + "26");
         pCard.style.setProperty("--det-title-color", col);
         pCard.style.setProperty("--det-bar-fill", col);
 
-        pTitle.textContent = label;
+        pTitle.textContent = displayLabel;
         pConf.textContent = confPct + "%";
         pBar.style.width = confPct + "%";
-        pHint.textContent = p.hint || "Clinical observation active.";
-        pSource.textContent = formatClinicalSource(p.source_model || data.mode);
+        pHint.textContent = (isGeminiVerified && gv.symptom_guide_summary)
+          ? gv.symptom_guide_summary
+          : (p.hint || "Clinical observation active.");
+
+        // Stage-2 Verifier Badge in Source
+        if (isFpFiltered) {
+          pSource.innerHTML = '<span style="color:var(--emerald);font-weight:700;">🛡️ False-Positive Filtered</span> · ' + (data.mode === "triage" ? "Normal" : "Healthy");
+        } else if (isGeminiVerified) {
+          pSource.innerHTML = '<span style="color:var(--sapphire-bright);font-weight:700;">✨ Gemini Verified</span> · ' + formatClinicalSource(p.source_model || data.mode);
+        } else {
+          pSource.textContent = formatClinicalSource(p.source_model || data.mode);
+        }
 
         pSev.className = "severity-badge " + sevKey;
         pSev.textContent = sev;
 
-        if (label === "Healthy") {
-          pStatusSub.textContent = "No disease signs detected";
-          if (camStatusText) camStatusText.textContent = "Healthy Subject Detected (" + confPct + "%)";
+        if (isHealthy) {
+          pStatusSub.textContent = isGeminiVerified ? "Stage-2 confirmed: Normal healthy subject" : "Flock parameters normal — no disease signs";
+          if (camStatusText) camStatusText.textContent = (displayLabel + " Subject (" + confPct + "%)");
         } else {
-          pStatusSub.textContent = "Pathology confirmed — quarantine advisory active";
-          if (camStatusText) camStatusText.textContent = label + " detected (" + confPct + "%)";
+          pStatusSub.textContent = isGeminiVerified ? "Stage-2 pathology confirmed — quarantine advisory active" : "Pathology suspected — stage-2 cross-checking";
+          if (camStatusText) camStatusText.textContent = (displayLabel + " detected (" + confPct + "%)");
         }
-
 
         if (p.action) {
           pAction.textContent = p.action;
         }
 
-        // Trigger Audio Chime if a severe disease is detected (throttled to once every 12 seconds per disease)
+        // Trigger Audio Chime if disease detected (NOT for healthy or normal, and requires Stage-2 or robust confidence >= 65%)
         const now = Date.now();
-        if ((sevKey === "crit" || sevKey === "high") && (lastAlertDisease !== label || now - lastAlertTime > 12000)) {
-          playAlertChime(sevKey);
-          lastAlertDisease = label;
+        const isDisease = (!isHealthy && displayLabel !== "Normal" && displayLabel !== "Healthy" && displayLabel !== "No Poultry Detected" && (isGeminiVerified || confPct >= 65));
+        if (isDisease && (lastAlertDisease !== displayLabel || now - lastAlertTime > 10000)) {
+          playAlertChime(sevKey || "med");
+          lastAlertDisease = displayLabel;
           lastAlertTime = now;
-          logIncident(label, confPct, sev, sevKey);
+          logIncident(displayLabel, confPct, sev, sevKey);
+        }
+
+        // Automated Live Stream Email Alert (throttled to once per 60 seconds per disease)
+        if (isDisease && (lastLiveEmailDisease !== displayLabel || now - lastLiveEmailTime > 60000)) {
+          triggerLiveStreamEmail(displayLabel, confPct, sevKey);
         }
       }
 
-      // DIFFERENTIAL DIAGNOSIS
+      // DIFFERENTIAL DIAGNOSIS CARD
       const diffEmpty = document.getElementById("diff-empty");
       const diffContent = document.getElementById("diff-content");
-      const dTitle = document.getElementById("d-title");
-      const dConf = document.getElementById("d-conf");
-      const dBar = document.getElementById("d-bar");
-      const dHint = document.getElementById("d-hint");
       const diffModelBadge = document.getElementById("diff-model-badge");
 
-      if (d && d.label && d.label !== (p ? p.label : "")) {
+      const gv = data.gemini_verifier || (p && p.gemini_verified ? p : null);
+      const geminiDiff = (gv && Array.isArray(gv.differential_diagnosis) && gv.differential_diagnosis.length > 0)
+        ? gv.differential_diagnosis
+        : null;
+
+      if (geminiDiff) {
         diffEmpty.style.display = "none";
         diffContent.style.display = "flex";
-        dTitle.textContent = d.label;
+        diffModelBadge.innerHTML = '<span style="color:var(--sapphire-bright);">✨ Stage-2 Consensus</span>';
+        let diffHtml = '';
+        geminiDiff.forEach(item => {
+          const cand = item.candidate_disease || item.disease || "Alternative Candidate";
+          const pct = item.probability_percent !== undefined ? item.probability_percent : (item.probability || 0);
+          const rat = item.rationale || item.description || "";
+          diffHtml += `
+            <div style="padding-bottom:8px; margin-bottom:8px; border-bottom:1px dashed rgba(255,255,255,0.08);">
+              <div class="diff-name-row" style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="diff-name" style="font-weight:700; color:#e2e8f0; font-size:0.83rem;">${cand}</span>
+                <span class="conf-pct-num" style="color:var(--sapphire-bright); font-weight:700; font-size:0.82rem;">${pct}%</span>
+              </div>
+              <div class="diff-bar-track" style="background:rgba(255,255,255,0.06); height:5px; border-radius:3px; overflow:hidden; margin:4px 0 6px 0;">
+                <div class="diff-bar-fill" style="width:${pct}%; height:100%; background:linear-gradient(90deg, #38bdf8, #0ea5e9); border-radius:3px;"></div>
+              </div>
+              ${rat ? `<div class="diff-hint" style="font-size:0.73rem; color:var(--t3); line-height:1.35;">${rat}</div>` : ''}
+            </div>
+          `;
+        });
+        diffContent.innerHTML = diffHtml;
+      } else if (d && d.label && d.label !== (p ? p.label : "")) {
+        diffEmpty.style.display = "none";
+        diffContent.style.display = "flex";
         const dPct = Math.round(d.confidence * 100);
-        dConf.textContent = dPct + "%";
-        dBar.style.width = dPct + "%";
-        dBar.style.background = d.color || "var(--sapphire)";
-        dHint.textContent = d.hint || "Alternative candidate detection.";
         diffModelBadge.textContent = formatClinicalSource(d.source_model);
+        diffContent.innerHTML = `
+          <div class="diff-name-row">
+            <span class="diff-name" id="d-title">${d.label}</span>
+            <span class="conf-pct-num" id="d-conf">${dPct}%</span>
+          </div>
+          <div class="diff-bar-track">
+            <div class="diff-bar-fill" id="d-bar" style="width:${dPct}%; background:${d.color || 'var(--sapphire)'};"></div>
+          </div>
+          <div class="diff-hint" id="d-hint">${d.hint || 'Alternative candidate detection.'}</div>
+        `;
       } else {
         diffEmpty.style.display = "block";
         diffContent.style.display = "none";
         diffModelBadge.textContent = "";
+        diffContent.innerHTML = "";
       }
+    }
+
+    function triggerLiveStreamEmail(disease, confPct, sevKey) {
+      const autoCb = document.getElementById("live-auto-email-cb") || document.getElementById("auto-email-checkbox");
+      if (autoCb && !autoCb.checked) return;
+
+      const emailInput = document.getElementById("live-alert-email") || document.getElementById("alert-email-input");
+      const defaultEmail = "{{ default_email or '' }}";
+      const recipient = (emailInput && emailInput.value.trim()) ? emailInput.value.trim() : defaultEmail;
+
+      lastLiveEmailDisease = disease;
+      lastLiveEmailTime = Date.now();
+
+      fetch("/live_stream_alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: recipient,
+          disease: disease,
+          confidence: (confPct || 85) / 100
+        })
+      }).then(r => r.json()).then(res => {
+        if (res && res.success) {
+          console.log("[alert] Live camera email alert sent:", res.message);
+          const camText = document.getElementById("cam-status-text");
+          if (camText) {
+            camText.textContent = "🚨 Email Alert Dispatched: " + disease + " -> " + recipient;
+          }
+          showToast(`🚨 Diagnostic Alert Email Dispatched to ${recipient}!`, 5000);
+        }
+      }).catch(err => console.log("[alert] Live alert dispatch error:", err));
     }
 
     // ━━ INCIDENT LOGGING ━━
@@ -2351,13 +2557,26 @@
     }
 
     // ━━ OFFLINE IMAGE DIAGNOSTIC TESTER ━━
+    let lastConsultation = null;
+
     async function handleImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
 
+      initAudioContext();
+
       const fd = new FormData();
       fd.append("image", file);
       fd.append("mode", currentMode);
+
+      const emailInput = document.getElementById("alert-email-input");
+      const autoEmailBox = document.getElementById("auto-email-checkbox");
+      if (emailInput && emailInput.value) {
+        fd.append("alert_email", emailInput.value.trim());
+      }
+      if (autoEmailBox) {
+        fd.append("send_email", autoEmailBox.checked ? "true" : "false");
+      }
 
       const resBox = document.getElementById("upload-result");
       const resTitle = document.getElementById("up-res-title");
@@ -2368,12 +2587,12 @@
           <div style="width:38px;height:38px;border-radius:50%;background:rgba(251,191,36,0.22);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(251,191,36,0.5);box-shadow:0 0 14px rgba(245,158,11,0.25);flex-shrink:0">
             <img src="/static/animations/chick_walk_transparent.webp" onerror="this.onerror=null;this.src='/static/chick_walk_transparent.webp'" style="width:32px;height:32px;object-fit:contain"/>
           </div>
-          <span style="color:#ffffff;font-size:0.96rem;font-weight:800;letter-spacing:-0.2px">Avian Pathology AI Diagnostic Engine Active</span>
+          <span style="color:#ffffff;font-size:0.96rem;font-weight:800;letter-spacing:-0.2px">AvianGuard AI Agent Diagnostic Pipeline</span>
         </div>
       `;
       resBody.innerHTML = `
         <div style="padding:10px 0 6px;color:var(--t-gold);font-weight:600;font-size:0.84rem;display:flex;align-items:center;gap:8px">
-          <span>Executing multi-model consensus &amp; anatomical lesion analysis...</span>
+          <span>🧠 Gemini Agent verifying poultry subject &amp; routing to neural network models...</span>
         </div>
         <div class="chick-inline-track"><div class="chick-inline-bar"></div></div>
       `;
@@ -2384,18 +2603,19 @@
 
         // Check for non-poultry subject rejection
         if (res.has_subject === false || res.error === "no_poultry_detected") {
-          resTitle.textContent = "⚠️ No Poultry Subject Detected";
-          resTitle.style.color = "var(--gold-bright)";
+          resTitle.textContent = "⚠️ Non-Poultry Image Rejected";
+          resTitle.style.color = "var(--crimson)";
           resBody.innerHTML = `
-            <div style="padding: 14px 18px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.45); color: #fbbf24; font-size: 0.85rem; line-height: 1.55;">
-              <div style="font-weight: 800; font-size: 0.95rem; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                <span>⚠️ NON-POULTRY IMAGE REJECTED</span>
+            <div style="padding: 16px 20px; border-radius: 12px; background: rgba(239, 68, 68, 0.12); border: 1.5px solid rgba(239, 68, 68, 0.45); color: #f87171; font-size: 0.85rem; line-height: 1.55;">
+              <div style="font-weight: 800; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; color: #ffffff;">
+                <span style="background: rgba(239,68,68,0.25); border: 1px solid rgba(239,68,68,0.5); padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; letter-spacing: 0.5px;">AGENT FILTER</span>
+                <span>NON-POULTRY SUBJECT INTERCEPTED</span>
               </div>
-              <div style="color: var(--t1); margin-bottom: 8px; font-weight: 600;">
-                ${res.user_message || res.override_reason || "Kindly upload a clear image of a chicken, poultry flock, or droppings to predict disease."}
+              <div style="color: #ffffff; margin-bottom: 10px; font-weight: 600; font-size: 0.88rem; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 6px;">
+                ${res.user_message || res.override_reason || "Only chicken or chicken fecal dropping images are supported."}
               </div>
-              <div style="color: var(--t2); font-size: 0.76rem;">
-                AvianGuard AI automatically filters out non-avian subjects (automobiles, furniture, household pets, human portraits, or landscapes) to safeguard veterinary diagnostic integrity.
+              <div style="color: #cbd5e1; font-size: 0.78rem;">
+                🛡️ <strong>AvianGuard Gemini AI Gatekeeper:</strong> Automatically verifies anatomical markers before running diagnostic neural networks. Human hands, faces, doors, furniture, household pets, and landscapes are strictly rejected to preserve clinical diagnostic integrity.
               </div>
             </div>
           `;
@@ -2406,73 +2626,70 @@
           const conf = Math.round(res.primary.confidence * 100);
           resTitle.textContent = res.primary.label + " (" + conf + "%)";
           resTitle.style.color = res.primary.color || "var(--gold-bright)";
-          
-          const domainLabel = res.segregation_context === 'HEAD_COMB' 
-            ? 'Cranial & Facial Pathology AI' 
-            : (res.segregation_context === 'FECAL' ? 'Coprological Diagnostic AI' : 'Physical & Behavioral Triage');
-          
-          const agentBadge = res.segregation_context 
-            ? `<div style="display:inline-block;padding:3px 11px;border-radius:100px;background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.35);color:var(--gold-bright);font-size:0.72rem;font-weight:700;margin-bottom:8px">🎯 Agent Routing: ${domainLabel}</div>` 
+
+          // Trigger audio chime if disease is detected
+          if (res.primary.label !== "Healthy") {
+            playAlertChime(res.primary.sev_key || "med");
+          }
+
+          const agentRoutingBadge = res.agent_routing
+            ? `<div style="display:inline-block;padding:4px 12px;border-radius:100px;background:rgba(0,240,168,0.12);border:1px solid rgba(0,240,168,0.35);color:var(--emerald);font-size:0.75rem;font-weight:700;margin-bottom:10px">🧠 ${res.agent_routing}</div>`
             : '';
-          
-          let overrideHtml = '';
-          if (res.clinical_override) {
-            overrideHtml = `
-              <div style="margin: 8px 0 10px; padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 0.76rem; line-height: 1.45;">
-                <div style="font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; color: #fef08a;">
-                  <span>⚡ AGENT CLINICAL ERROR-CORRECTION</span>
+
+          let consultationHtml = '';
+          if (res.agent_consultation) {
+            lastConsultation = res.agent_consultation;
+            const ac = res.agent_consultation;
+            const symptoms = (ac.clinical_symptoms || []).map(s => `<li>${s}</li>`).join('');
+            consultationHtml = `
+              <div style="margin-top: 14px; padding: 14px 16px; border-radius: 10px; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(0, 240, 168, 0.35);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="color: var(--emerald); font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">🧠 Gemini Clinical Consultation</span>
+                  <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 100px; background: rgba(239,68,68,0.2); color: #f87171; font-weight: 700;">${ac.urgency_level || 'High Urgency'}</span>
                 </div>
-                <div>${res.override_reason || "Base model misclassification intercepted and corrected based on anatomical lesion analysis and multi-model consensus."}</div>
+                <div style="font-size: 0.78rem; color: #f1f5f9; line-height: 1.5; margin-bottom: 8px;">
+                  <strong>Pathology:</strong> ${ac.pathology_overview || ''}
+                </div>
+                ${symptoms ? `<div style="font-size: 0.76rem; color: #cbd5e1; margin-bottom: 8px;"><strong style="color: var(--sapphire-bright);">Symptoms:</strong><ul style="margin: 4px 0 0; padding-left: 18px;">${symptoms}</ul></div>` : ''}
+                <div style="margin-bottom: 8px; padding: 8px 10px; border-radius: 6px; background: rgba(239, 68, 68, 0.12); border-left: 3px solid #ef4444; font-size: 0.75rem; color: #fca5a5;">
+                  <strong>Biosecurity Protocol:</strong> ${ac.biosecurity_protocol || ''}
+                </div>
+                <div style="padding: 8px 10px; border-radius: 6px; background: rgba(16, 185, 129, 0.12); border-left: 3px solid #10b981; font-size: 0.75rem; color: #86efac;">
+                  <strong>Veterinary Regimen:</strong> ${ac.treatment_regimen || ''}
+                </div>
               </div>
             `;
           }
 
-          let metricsHtml = '';
-          if (res.anatomical_metrics) {
-            const m = res.anatomical_metrics;
-            if (m.comb_vitality_pct !== undefined) {
-              metricsHtml = `
-                <div style="margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid var(--b1); font-size: 0.74rem; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                  <div><span style="color:var(--t3)">Comb Vitality:</span> <strong style="color:var(--t1)">${m.comb_vitality_pct}%</strong></div>
-                  <div><span style="color:var(--t3)">Necrosis Index:</span> <strong style="color:${m.necrotic_index_pct > 20 ? 'var(--crimson)' : 'var(--emerald)'}">${m.necrotic_index_pct}%</strong></div>
-                  <div style="grid-column: 1 / -1;"><span style="color:var(--t3)">Tissue Evaluation:</span> <strong style="color:var(--gold-bright)">${m.health_evaluation || 'Analyzed'}</strong></div>
-                </div>
-              `;
-            } else if (m.blood_index_pct !== undefined) {
-              metricsHtml = `
-                <div style="margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid var(--b1); font-size: 0.74rem; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                  <div><span style="color:var(--t3)">Hemorrhage Index:</span> <strong style="color:${m.blood_index_pct > 15 ? 'var(--crimson)' : 'var(--t1)'}">${m.blood_index_pct}%</strong></div>
-                  <div><span style="color:var(--t3)">Bile Index:</span> <strong style="color:var(--emerald)">${m.green_index_pct}%</strong></div>
-                </div>
-              `;
-            }
-          }
-
-          let diffHtml = '';
-          if (res.differential_diagnosis && res.differential_diagnosis.length > 0) {
-            diffHtml = `<div style="margin-top:6px;font-size:0.74rem;color:var(--t2)"><strong>Differential Suspects:</strong> ${res.differential_diagnosis.join(', ')}</div>`;
-          }
-
-          let knowHtml = '';
-          if (res.disease_knowledge && res.disease_knowledge.etiology) {
-            knowHtml = `
-              <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--b1);font-size:0.72rem;color:var(--t2)">
-                <div><strong>Etiology:</strong> ${res.disease_knowledge.etiology}</div>
-                ${res.disease_knowledge.management ? `<div style="margin-top:4px"><strong>Bio-Management:</strong> ${res.disease_knowledge.management}</div>` : ''}
+          let emailStatusHtml = '';
+          const defaultEmail = "{{ default_email or '' }}";
+          const currentEmail = document.getElementById("alert-email-input") ? document.getElementById("alert-email-input").value.trim() : defaultEmail;
+          if (res.email_dispatched) {
+            emailStatusHtml = `
+              <div style="margin-top: 10px; padding: 8px 12px; border-radius: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-size: 0.76rem;">
+                ✅ <strong>Diagnostic Alert Email Dispatched</strong> to <strong>${res.email_recipient}</strong>
+              </div>
+            `;
+          } else if (res.primary.label !== "Healthy") {
+            emailStatusHtml = `
+              <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="tool-btn" style="padding: 6px 14px; font-size: 0.76rem; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--b-gold); color: var(--gold-bright);" onclick="sendManualEmailAlert('${res.primary.label}', ${res.primary.confidence})">
+                  <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  <span>Dispatch Email Alert to ${currentEmail}</span>
+                </button>
+                <span id="manual-email-status" style="font-size: 0.75rem;"></span>
               </div>
             `;
           }
 
           const clinicalSource = formatClinicalSource(res.primary.source_model || "ensemble");
           resBody.innerHTML = `
-            ${agentBadge}
-            ${overrideHtml}
+            ${agentRoutingBadge}
             <div><strong>Clinical Engine:</strong> ${clinicalSource} | <strong>Severity:</strong> ${res.primary.severity || "Moderate"}</div>
-            ${metricsHtml}
             <div style="margin-top:5px">${res.primary.hint || ""}</div>
             <div style="margin-top:7px;font-size:0.74rem;color:var(--sapphire-bright)"><strong>Veterinary Directive:</strong> ${res.primary.action || "Consult avian veterinarian."}</div>
-            ${diffHtml}
-            ${knowHtml}
+            ${consultationHtml}
+            ${emailStatusHtml}
           `;
           logIncident(res.primary.label, conf, res.primary.severity || "Moderate", res.primary.sev_key || "med");
         } else {
@@ -2483,6 +2700,41 @@
       } catch (err) {
         resTitle.textContent = "Analysis Failed";
         resBody.textContent = err.message || "Could not process image.";
+      }
+    }
+
+    async function sendManualEmailAlert(disease, confidence) {
+      const emailInput = document.getElementById("alert-email-input");
+      const defaultEmail = "{{ default_email or '' }}";
+      const recipient = emailInput ? emailInput.value.trim() : defaultEmail;
+      const statusEl = document.getElementById("manual-email-status");
+      if (statusEl) {
+        statusEl.textContent = "Sending email alert...";
+        statusEl.style.color = "var(--gold-bright)";
+      }
+      try {
+        const resp = await fetch("/send_email_alert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: recipient, disease: disease, confidence: confidence, consultation: lastConsultation || {} })
+        });
+        const res = await resp.json();
+        if (res.success) {
+          if (statusEl) {
+            statusEl.textContent = "✅ Alert delivered to " + recipient;
+            statusEl.style.color = "var(--emerald)";
+          }
+        } else {
+          if (statusEl) {
+            statusEl.textContent = "❌ " + res.message;
+            statusEl.style.color = "var(--crimson)";
+          }
+        }
+      } catch (err) {
+        if (statusEl) {
+          statusEl.textContent = "❌ Network error";
+          statusEl.style.color = "var(--crimson)";
+        }
       }
     }
 
